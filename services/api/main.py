@@ -26,6 +26,7 @@ from database.mysql.session import check_db_connectivity, dispose_engine, get_db
 from services.api.config import Settings, get_settings
 from services.api.routes.alerts import router as alerts_router
 from services.api.routes.auth import router as auth_router
+from services.api.routes.conversations import router as conversations_router
 from services.api.routes.readings import router as readings_router
 from services.api.routes.websocket import router as ws_router
 from services.websocket.manager import connection_manager
@@ -134,6 +135,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Mount Clinical Alerts Routers (both /api/v1 and root)
     app.include_router(alerts_router, prefix=app_settings.api_v1_prefix)
     app.include_router(alerts_router)
+
+    # Mount Clinical Conversations and Messaging Routers (both /api/v1 and root)
+    app.include_router(conversations_router, prefix=app_settings.api_v1_prefix)
+    app.include_router(conversations_router)
 
     # Mount Real-Time WebSockets Router (both /api/v1 and root)
     app.include_router(ws_router, prefix=app_settings.api_v1_prefix)

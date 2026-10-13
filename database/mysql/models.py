@@ -830,12 +830,68 @@ class NotificationDelivery(Base):
 # 6. Direct Messaging & System Audit Trail
 # =============================================================================
 
+class Conversation(Base):
+    """Secure direct messaging channel between an authorized patient and clinician."""
+
+    __tablename__ = "conversations"
+
+    conversation_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    patient_id: Mapped[str] = mapped_column(
+        String(32),
+        ForeignKey("patient_profiles.patient_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    doctor_id: Mapped[str] = mapped_column(
+        String(32),
+        ForeignKey("doctor_profiles.doctor_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    # Relationships
+    patient: Mapped[PatientProfile] = relationship("PatientProfile")
+    doctor: Mapped[DoctorProfile] = relationship("DoctorProfile")
+    messages: Mapped[List[Message]] = relationship(
+        "Message",
+        back_populates="conversation",
+        cascade="all, delete-orphan",
+        order_by="Message.created_at.asc()",
+    )
+
+    __table_args__ = (
+        UniqueConstraint("patient_id", "doctor_id", name="uq_conversations_patient_doctor"),
+        Index("idx_conversations_updated", "updated_at"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<Conversation id='{self.conversation_id}' patient='{self.patient_id}' doctor='{self.doctor_id}'>"
+
+
 class Message(Base):
     """Direct communication between clinicians and patients within assigned care contexts."""
 
     __tablename__ = "messages"
 
     message_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    conversation_id: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        ForeignKey("conversations.conversation_id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     sender_id: Mapped[str] = mapped_column(
         String(64),
         ForeignKey("users.user_id", ondelete="CASCADE"),
@@ -856,6 +912,10 @@ class Message(Base):
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
     is_read: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    idempotency_key: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -867,6 +927,7 @@ class Message(Base):
     )
 
     # Relationships
+    conversation: Mapped[Optional[Conversation]] = relationship("Conversation", back_populates="messages")
     sender: Mapped[User] = relationship("User", foreign_keys=[sender_id])
     receiver: Mapped[User] = relationship("User", foreign_keys=[receiver_id])
     patient_context: Mapped[Optional[PatientProfile]] = relationship("PatientProfile")
@@ -874,10 +935,13 @@ class Message(Base):
     __table_args__ = (
         Index("idx_messages_receiver_read_time", "receiver_id", "is_read", "created_at"),
         Index("idx_messages_sender_time", "sender_id", "created_at"),
+        Index("idx_messages_conversation_time", "conversation_id", "created_at"),
+        Index("idx_messages_conversation_unread", "conversation_id", "is_read", "receiver_id"),
+        Index("uq_messages_sender_idempotency", "sender_id", "idempotency_key", unique=True),
     )
 
     def __repr__(self) -> str:
-        return f"<Message id='{self.message_id}' sender='{self.sender_id}' receiver='{self.receiver_id}' read={self.is_read}>"
+        return f"<Message id='{self.message_id}' conv='{self.conversation_id}' sender='{self.sender_id}' receiver='{self.receiver_id}' read={self.is_read}>"
 
 
 class AuditLog(Base):

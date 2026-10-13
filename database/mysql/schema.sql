@@ -273,23 +273,46 @@ CREATE INDEX idx_deliveries_recipient_status ON notification_deliveries (recipie
 -- 6. DIRECT MESSAGING & SYSTEM AUDIT TRAIL
 -- =====================================================================
 
+CREATE TABLE IF NOT EXISTS conversations (
+    conversation_id VARCHAR(64) NOT NULL,
+    patient_id VARCHAR(32) NOT NULL,
+    doctor_id VARCHAR(32) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT pk_conversations PRIMARY KEY (conversation_id),
+    CONSTRAINT fk_conversations_patient FOREIGN KEY (patient_id) REFERENCES patient_profiles (patient_id) ON DELETE CASCADE,
+    CONSTRAINT fk_conversations_doctor FOREIGN KEY (doctor_id) REFERENCES doctor_profiles (doctor_id) ON DELETE CASCADE,
+    CONSTRAINT uq_conversations_patient_doctor UNIQUE (patient_id, doctor_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX idx_conversations_patient ON conversations (patient_id);
+CREATE INDEX idx_conversations_doctor ON conversations (doctor_id);
+CREATE INDEX idx_conversations_updated ON conversations (updated_at);
+
 CREATE TABLE IF NOT EXISTS messages (
     message_id VARCHAR(64) NOT NULL,
+    conversation_id VARCHAR(64) NULL,
     sender_id VARCHAR(64) NOT NULL,
     receiver_id VARCHAR(64) NOT NULL,
     patient_context_id VARCHAR(32) NULL,
     content TEXT NOT NULL,
     is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    idempotency_key VARCHAR(64) NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     read_at TIMESTAMP NULL DEFAULT NULL,
     CONSTRAINT pk_messages PRIMARY KEY (message_id),
+    CONSTRAINT fk_messages_conversation FOREIGN KEY (conversation_id) REFERENCES conversations (conversation_id) ON DELETE CASCADE,
     CONSTRAINT fk_messages_sender FOREIGN KEY (sender_id) REFERENCES users (user_id) ON DELETE CASCADE,
     CONSTRAINT fk_messages_receiver FOREIGN KEY (receiver_id) REFERENCES users (user_id) ON DELETE CASCADE,
-    CONSTRAINT fk_messages_patient_context FOREIGN KEY (patient_context_id) REFERENCES patient_profiles (patient_id) ON DELETE SET NULL
+    CONSTRAINT fk_messages_patient_context FOREIGN KEY (patient_context_id) REFERENCES patient_profiles (patient_id) ON DELETE SET NULL,
+    CONSTRAINT uq_messages_sender_idempotency UNIQUE (sender_id, idempotency_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE INDEX idx_messages_receiver_read_time ON messages (receiver_id, is_read, created_at);
 CREATE INDEX idx_messages_sender_time ON messages (sender_id, created_at);
+CREATE INDEX idx_messages_conversation_time ON messages (conversation_id, created_at);
+CREATE INDEX idx_messages_conversation_unread ON messages (conversation_id, is_read, receiver_id);
 
 CREATE TABLE IF NOT EXISTS audit_logs (
     audit_id BIGINT AUTO_INCREMENT,

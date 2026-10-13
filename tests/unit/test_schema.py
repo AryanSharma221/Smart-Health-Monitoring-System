@@ -88,6 +88,7 @@ def test_all_expected_tables_present_in_metadata():
         "alerts",
         "alert_status_history",
         "notification_deliveries",
+        "conversations",
         "messages",
         "audit_logs",
         "analytics_outbox",

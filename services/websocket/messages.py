@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
-from database.mysql.models import Alert, IngestionEvent
+from database.mysql.models import Alert, IngestionEvent, Message
 
 
 class RealtimeEvent(BaseModel):
@@ -89,3 +89,48 @@ def build_alert_acknowledged_event(
             "note": note[:200] if note else None,
         },
     )
+
+
+def build_message_created_event(message: Message, patient_id: str) -> RealtimeEvent:
+    """Build notification for a newly committed direct message."""
+    now_iso = (
+        message.created_at.isoformat()
+        if hasattr(message.created_at, "isoformat")
+        else datetime.now(timezone.utc).isoformat()
+    )
+    return RealtimeEvent(
+        event_type="message.created",
+        occurred_at=now_iso,
+        patient_id=patient_id,
+        resource_id=message.message_id,
+        payload={
+            "conversation_id": message.conversation_id,
+            "message_id": message.message_id,
+            "sender_id": message.sender_id,
+            "receiver_id": message.receiver_id,
+            "created_at": now_iso,
+        },
+    )
+
+
+def build_message_read_event(
+    conversation_id: str,
+    patient_id: str,
+    read_by: str,
+    count: int,
+    read_at: str,
+) -> RealtimeEvent:
+    """Build notification for messages marked as read in a conversation."""
+    return RealtimeEvent(
+        event_type="message.read",
+        occurred_at=read_at,
+        patient_id=patient_id,
+        resource_id=conversation_id,
+        payload={
+            "conversation_id": conversation_id,
+            "read_by": read_by,
+            "messages_marked_read": count,
+            "read_at": read_at,
+        },
+    )
+
