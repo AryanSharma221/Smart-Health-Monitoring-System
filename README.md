@@ -41,7 +41,18 @@ Apply migrations directly to the configured MySQL instance (when online):
 python -m alembic upgrade head
 ```
 
-### Step 5: Run FastAPI Gateway Locally
+### Step 5: Validate and Ingest Kaggle Historical Dataset
+Dry-run validation (zero database mutation):
+```bash
+python -m services.ingestion.cli --dry-run
+```
+Execute actual idempotent ingestion:
+```bash
+python -m services.ingestion.cli --csv-path "E:\DOC-20261013-WA0056.csv" --batch-size 250
+```
+For detailed ingestion documentation, see [docs/dataset_ingestion.md](docs/dataset_ingestion.md).
+
+### Step 6: Run FastAPI Gateway Locally
 ```bash
 uvicorn services.api.main:app --host 127.0.0.1 --port 8000 --reload
 ```
