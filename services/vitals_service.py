@@ -65,3 +65,70 @@ class VitalsService:
         if age_seconds < 0:
             return "active"  # Observation timestamp in future / simulator
         return "active" if age_seconds <= max_staleness_seconds else "stale"
+
+    @staticmethod
+    def map_event_to_reading_dict(event) -> Dict[str, Any]:
+        """Transform an IngestionEvent and its normalized readings into an API reading structure."""
+        reading: Dict[str, Any] = {
+            "event_id": event.event_id,
+            "patient_id": event.patient_id,
+            "measured_at": event.measured_at,
+            "source": event.source,
+            "is_simulated": event.is_simulated,
+            "heart_rate": None,
+            "spo2": None,
+            "temperature_f": None,
+            "temperature_c": None,
+        }
+        for r in event.readings:
+            if r.metric_code == "heart_rate":
+                reading["heart_rate"] = float(r.value)
+            elif r.metric_code == "spo2":
+                reading["spo2"] = float(r.value)
+            elif r.metric_code == "temperature":
+                reading["temperature_c"] = float(r.value)
+                if r.raw_unit == "degF":
+                    reading["temperature_f"] = float(r.raw_value)
+                else:
+                    reading["temperature_f"] = round(float(r.value) * 9.0 / 5.0 + 32.0, 2)
+        return reading
+
+    def get_paginated_readings(
+        self,
+        patient_id: str,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+        source: Optional[str] = None,
+        is_simulated: Optional[bool] = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> tuple[List[Dict[str, Any]], int]:
+        """
+        Query paginated readings for a patient.
+        Validates timestamp ordering and delegates to repository.
+        """
+        if start_time and end_time and start_time > end_time:
+            raise ValueError("Invalid time range: start_time cannot be later than end_time.")
+
+        events, total_count = self.repo.get_patient_events_paginated(
+            patient_id=patient_id,
+            start_time=start_time,
+            end_time=end_time,
+            source=source,
+            is_simulated=is_simulated,
+            page=page,
+            page_size=page_size,
+        )
+        items = [self.map_event_to_reading_dict(e) for e in events]
+        return items, total_count
+
+    def get_latest_reading(self, patient_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Fetch the newest observation event for a patient.
+        Returns mapped dictionary or None if no readings exist.
+        """
+        event = self.repo.get_latest_patient_event(patient_id)
+        if not event:
+            return None
+        return self.map_event_to_reading_dict(event)
+

@@ -10,8 +10,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import List, Optional, Sequence, Set
 
-from sqlalchemy import desc, select
-from sqlalchemy.orm import Session
+from sqlalchemy import desc, func, select
+from sqlalchemy.orm import Session, joinedload
 
 from database.mysql.models import IngestionEvent, VitalsReading
 
@@ -102,3 +102,60 @@ class VitalsRepository:
             if r is not None:
                 latest_readings.append(r)
         return latest_readings
+
+    def get_patient_events_paginated(
+        self,
+        patient_id: str,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+        source: Optional[str] = None,
+        is_simulated: Optional[bool] = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> tuple[List[IngestionEvent], int]:
+        """
+        Query paginated ingestion events for a patient with eager loaded vitals readings.
+        Deterministic tie-breaker on event_id.
+        Returns (list_of_events, total_count).
+        """
+        filters = [IngestionEvent.patient_id == patient_id]
+        if start_time is not None:
+            filters.append(IngestionEvent.measured_at >= start_time)
+        if end_time is not None:
+            filters.append(IngestionEvent.measured_at <= end_time)
+        if source is not None:
+            filters.append(IngestionEvent.source == source)
+        if is_simulated is not None:
+            filters.append(IngestionEvent.is_simulated == is_simulated)
+
+        # 1. Total count
+        count_stmt = select(func.count(IngestionEvent.event_id)).where(*filters)
+        total_count = self.session.scalar(count_stmt) or 0
+
+        # 2. Paginated results with joinedload to eliminate N+1 queries
+        offset = (page - 1) * page_size
+        stmt = (
+            select(IngestionEvent)
+            .options(joinedload(IngestionEvent.readings))
+            .where(*filters)
+            .order_by(desc(IngestionEvent.measured_at), desc(IngestionEvent.event_id))
+            .offset(offset)
+            .limit(page_size)
+        )
+        events = list(self.session.scalars(stmt).unique().all())
+        return events, total_count
+
+    def get_latest_patient_event(self, patient_id: str) -> Optional[IngestionEvent]:
+        """
+        Retrieve the latest IngestionEvent for a patient with eager loaded readings.
+        Deterministic tie-breaker on event_id.
+        """
+        stmt = (
+            select(IngestionEvent)
+            .options(joinedload(IngestionEvent.readings))
+            .where(IngestionEvent.patient_id == patient_id)
+            .order_by(desc(IngestionEvent.measured_at), desc(IngestionEvent.event_id))
+            .limit(1)
+        )
+        return self.session.scalars(stmt).unique().first()
+
