@@ -308,6 +308,28 @@ CREATE INDEX idx_audit_actor_time ON audit_logs (actor_id, timestamp);
 CREATE INDEX idx_audit_target ON audit_logs (target_type, target_id);
 CREATE INDEX idx_audit_timestamp ON audit_logs (timestamp);
 
+-- Table 14: analytics_outbox
+-- Transactional outbox for reliable asynchronous mirroring to MongoDB Atlas
+CREATE TABLE IF NOT EXISTS analytics_outbox (
+    outbox_id BIGINT AUTO_INCREMENT,
+    event_type VARCHAR(32) NOT NULL,
+    aggregate_id VARCHAR(64) NOT NULL,
+    payload_json TEXT NOT NULL,
+    status VARCHAR(16) NOT NULL DEFAULT 'pending',
+    attempt_count INT NOT NULL DEFAULT 0,
+    max_attempts INT NOT NULL DEFAULT 5,
+    last_error TEXT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_attempt_at TIMESTAMP NULL,
+    completed_at TIMESTAMP NULL,
+    CONSTRAINT pk_analytics_outbox PRIMARY KEY (outbox_id),
+    CONSTRAINT ck_outbox_status CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+    CONSTRAINT ck_outbox_event_type CHECK (event_type IN ('telemetry_event', 'alert_event'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX idx_outbox_status_created ON analytics_outbox (status, created_at);
+CREATE INDEX idx_outbox_aggregate ON analytics_outbox (event_type, aggregate_id);
+
 -- =====================================================================
 -- 7. DA1/DA2 DATABASE OBJECTS: VIEWS, FUNCTIONS, PROCEDURES & TRIGGERS
 -- =====================================================================

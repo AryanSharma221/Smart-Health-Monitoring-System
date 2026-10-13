@@ -918,3 +918,63 @@ class AuditLog(Base):
 
     def __repr__(self) -> str:
         return f"<AuditLog id={self.audit_id} actor='{self.actor_id}' action='{self.action}' target='{self.target_type}/{self.target_id}'>"
+
+
+# =============================================================================
+# 7. Asynchronous Analytics Mirror & Transactional Outbox
+# =============================================================================
+
+class AnalyticsOutbox(Base):
+    """
+    Transactional outbox table for reliable, asynchronous mirroring to MongoDB Atlas.
+    Committed in the same MySQL transaction as the business event.
+    """
+
+    __tablename__ = "analytics_outbox"
+
+    outbox_id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    )
+    event_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    aggregate_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    payload_json: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(16),
+        nullable=False,
+        default="pending",
+    )
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
+    last_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    last_attempt_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    completed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    __table_args__ = (
+        Index("idx_outbox_status_created", "status", "created_at"),
+        Index("idx_outbox_aggregate", "event_type", "aggregate_id"),
+        CheckConstraint(
+            "status IN ('pending', 'processing', 'completed', 'failed')",
+            name="ck_outbox_status",
+        ),
+        CheckConstraint(
+            "event_type IN ('telemetry_event', 'alert_event')",
+            name="ck_outbox_event_type",
+        ),
+    )
+
+    def __repr__(self) -> str:
+        return f"<AnalyticsOutbox id={self.outbox_id} type='{self.event_type}' agg='{self.aggregate_id}' status='{self.status}'>"
+

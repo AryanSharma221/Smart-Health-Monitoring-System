@@ -16,6 +16,12 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
+from database.mongodb.client import (
+    check_mongo_connectivity,
+    close_mongo_client,
+    sanitize_mongo_uri,
+)
+from database.mysql.repositories.outbox_repository import OutboxRepository
 from database.mysql.session import check_db_connectivity, dispose_engine, get_db
 from services.api.config import Settings, get_settings
 from services.api.routes.alerts import router as alerts_router
@@ -32,6 +38,7 @@ async def app_lifespan(app: FastAPI):
     yield
     logger.info("Shutting down API Gateway: releasing database connection pools")
     dispose_engine()
+    close_mongo_client()
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -92,6 +99,25 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {
             "status": "connected" if connected else "unreachable",
             "database": "mysql_innodb",
+        }
+
+    @app.get("/health/mongodb", tags=["System"])
+    def mongodb_health_check(
+        current_settings: Settings = Depends(get_settings),
+        db: Session = Depends(get_db),
+    ) -> Dict[str, Any]:
+        """
+        MongoDB Atlas connectivity and analytics outbox health probe.
+        Redacts credentials; never leaks sensitive data.
+        """
+        is_connected, desc = check_mongo_connectivity(current_settings)
+        outbox_repo = OutboxRepository(db)
+        stats = outbox_repo.get_outbox_stats()
+        return {
+            "status": "connected" if is_connected else desc,
+            "database": current_settings.mongodb_database,
+            "endpoint": sanitize_mongo_uri(current_settings.mongodb_uri),
+            "outbox_queue": stats,
         }
 
     # Mount Authentication and Identity Routers (both /api/v1/auth and /auth)

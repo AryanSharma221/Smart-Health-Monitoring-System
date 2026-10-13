@@ -288,6 +288,11 @@ class Settings(BaseSettings):
                 f"Invalid MONGODB_URI scheme '{parsed.scheme}'. Must be 'mongodb' or 'mongodb+srv'."
             )
 
+    @property
+    def is_mongo_configured(self) -> bool:
+        """Return True if MongoDB Atlas connection URI is configured."""
+        return bool(self.mongodb_uri)
+
     def get_resolved_dataset_path(self) -> Path:
         """
         Resolve the configured dataset path.
