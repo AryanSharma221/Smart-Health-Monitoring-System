@@ -32,6 +32,7 @@ from database.mysql.models import (
     User,
     VitalsReading,
 )
+from database.mysql.repositories import PatientRepository, VitalsRepository
 from services.ingestion.validator import (
     DatasetValidationResult,
     ParsedKaggleRow,
@@ -133,8 +134,8 @@ def ensure_patient_identities(
     for missing patient identifiers.
     Returns the set of valid patient_ids present in the database.
     """
-    stmt = select(PatientProfile.patient_id).where(PatientProfile.patient_id.in_(patient_ids))
-    existing_ids = set(session.scalars(stmt).all())
+    repo = PatientRepository(session)
+    existing_ids = repo.get_existing_patient_ids(list(patient_ids))
 
     missing_ids = patient_ids - existing_ids
     if not missing_ids or not auto_seed:
@@ -286,16 +287,8 @@ class KaggleDatasetImporter:
             for r in records
         ]
 
-        existing_set: Set[str] = set()
-        # Query in chunks to avoid parameter limits
-        chunk_size = 500
-        for i in range(0, len(source_event_ids), chunk_size):
-            chunk = source_event_ids[i : i + chunk_size]
-            stmt = select(IngestionEvent.source_event_id).where(
-                IngestionEvent.source == "kaggle_csv",
-                IngestionEvent.source_event_id.in_(chunk),
-            )
-            existing_set.update(self.session.scalars(stmt).all())
+        vitals_repo = VitalsRepository(self.session)
+        existing_set = vitals_repo.get_existing_source_event_ids("kaggle_csv", source_event_ids)
 
         new_count = len(records) - len(existing_set)
         report.events_inserted = new_count
@@ -327,6 +320,8 @@ class KaggleDatasetImporter:
         self.session.add(import_batch)
         self.session.flush()
 
+        vitals_repo = VitalsRepository(self.session)
+
         # Process in batches
         for i in range(0, len(records), self.batch_size):
             batch_slice = records[i : i + self.batch_size]
@@ -337,11 +332,7 @@ class KaggleDatasetImporter:
                 generate_source_event_id(file_sha256, r.row_ordinal, r.patient_id): r
                 for r in batch_slice
             }
-            existing_stmt = select(IngestionEvent.source_event_id).where(
-                IngestionEvent.source == "kaggle_csv",
-                IngestionEvent.source_event_id.in_(list(id_mapping.keys())),
-            )
-            existing_ids = set(self.session.scalars(existing_stmt).all())
+            existing_ids = vitals_repo.get_existing_source_event_ids("kaggle_csv", list(id_mapping.keys()))
 
             # Filter to new records only
             new_records = [r for src_id, r in id_mapping.items() if src_id not in existing_ids]
@@ -363,7 +354,7 @@ class KaggleDatasetImporter:
                     mirror_status="pending",
                     created_at=now,
                 )
-                self.session.add(event)
+                vitals_repo.create_event(event)
 
                 # Expand 3 vitals readings per event
                 readings = [
@@ -404,7 +395,7 @@ class KaggleDatasetImporter:
                         created_at=now,
                     ),
                 ]
-                self.session.add_all(readings)
+                vitals_repo.add_readings(readings)
 
                 report.events_inserted += 1
                 report.readings_inserted += 3

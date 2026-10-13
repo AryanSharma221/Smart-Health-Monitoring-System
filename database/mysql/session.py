@@ -1,19 +1,30 @@
 """
-Database Engine and Session Lifecycle Management.
+Database Engine, Connection Pooling, and Session Lifecycle Management.
 
-Provides connection pooling, session lifecycle scopes, and FastAPI dependency helpers
-for MySQL 8 (InnoDB) with fail-safe fallbacks for testing.
+Provides:
+- Production connection pooling for MySQL 8 (InnoDB).
+- Safe SQLite fallbacks for testing and local validation.
+- Transactional context manager (transaction_scope) with automatic rollback on error.
+- FastAPI dependency generator (get_db).
+- Safe connection health checks without credential exposure.
 """
 
 from __future__ import annotations
 
 import logging
+from contextlib import contextmanager
 from typing import Generator
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import DBAPIError, IntegrityError, OperationalError
 from sqlalchemy.orm import Session, sessionmaker
 
+from database.mysql.exceptions import (
+    DatabaseConnectionError,
+    DatabaseError,
+    EntityConflictError,
+)
 from services.api.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -80,6 +91,18 @@ def get_session_factory(engine: Engine | None = None) -> sessionmaker[Session]:
     return factory
 
 
+def dispose_engine() -> None:
+    """Dispose the current engine and reset singleton references (used for teardown/testing)."""
+    global _engine, _session_factory
+    if _engine is not None:
+        try:
+            _engine.dispose()
+        except Exception as exc:
+            logger.warning("Error disposing engine: %s", exc)
+        _engine = None
+    _session_factory = None
+
+
 def get_db() -> Generator[Session, None, None]:
     """
     FastAPI dependency that yields a database session per request.
@@ -93,10 +116,46 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
+@contextmanager
+def transaction_scope(session: Session | None = None) -> Generator[Session, None, None]:
+    """
+    Provide an explicit transactional boundary around a sequence of operations.
+    
+    If an external session is passed, executes within that session.
+    If no session is passed, manages session creation and destruction cleanly.
+    Commits on clean exit, rolls back on exception, and translates driver errors.
+    """
+    owns_session = session is None
+    s = session if session is not None else get_session_factory()()
+
+    try:
+        yield s
+        s.commit()
+    except IntegrityError as exc:
+        s.rollback()
+        logger.warning("Database integrity constraint violation: %s", exc.orig if hasattr(exc, "orig") else exc)
+        raise EntityConflictError("Database constraint violation", original_exception=exc) from exc
+    except (OperationalError, DBAPIError) as exc:
+        s.rollback()
+        logger.error("Database operational or connection error during transaction: %s", exc)
+        raise DatabaseConnectionError("Database operation failed due to a connection or server error", original_exception=exc) from exc
+    except DatabaseError:
+        s.rollback()
+        raise
+    except Exception as exc:
+        s.rollback()
+        logger.error("Unexpected error in database transaction: %s", exc)
+        raise DatabaseError(f"Database transaction failed: {exc}", original_exception=exc) from exc
+    finally:
+        if owns_session:
+            s.close()
+
+
 def check_db_connectivity(engine: Engine | None = None) -> bool:
     """
     Verify database connectivity using a lightweight SELECT 1 query.
     Returns True if healthy, False if unreachable or in error.
+    Never exposes passwords or sensitive credentials in logs.
     """
     target_engine = engine or get_engine()
     try:
