@@ -228,7 +228,8 @@ CREATE TABLE IF NOT EXISTS alerts (
     CONSTRAINT fk_alerts_resolved_by FOREIGN KEY (resolved_by) REFERENCES users (user_id) ON DELETE SET NULL,
     CONSTRAINT ck_alerts_severity CHECK (severity IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL')),
     CONSTRAINT ck_alerts_category CHECK (category IN ('vital_threshold', 'ml_anomaly', 'composite', 'stale_data')),
-    CONSTRAINT ck_alerts_status CHECK (status IN ('NEW', 'ACKNOWLEDGED', 'RESOLVED'))
+    CONSTRAINT ck_alerts_status CHECK (status IN ('NEW', 'ACKNOWLEDGED', 'RESOLVED')),
+    CONSTRAINT uq_alerts_event_rule UNIQUE (event_id, rule_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE INDEX idx_alerts_patient_status_time ON alerts (patient_id, status, created_at);

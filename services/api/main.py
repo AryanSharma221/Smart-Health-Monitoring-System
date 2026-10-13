@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from database.mysql.session import check_db_connectivity, dispose_engine, get_db
 from services.api.config import Settings, get_settings
+from services.api.routes.alerts import router as alerts_router
 from services.api.routes.auth import router as auth_router
 from services.api.routes.readings import router as readings_router
 
@@ -100,6 +101,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Mount Patient Health Readings Routers (both /api/v1/patients and /patients)
     app.include_router(readings_router, prefix=app_settings.api_v1_prefix)
     app.include_router(readings_router)
+
+    # Mount Clinical Alerts Routers (both /api/v1 and root)
+    app.include_router(alerts_router, prefix=app_settings.api_v1_prefix)
+    app.include_router(alerts_router)
 
     return app
 

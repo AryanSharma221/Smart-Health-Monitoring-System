@@ -8,6 +8,7 @@ and ensures atomic synchronization across alerts, status history, and audit logs
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
@@ -45,6 +46,27 @@ class AlertService:
         """List alerts filtered by patient or status."""
         return self.alert_repo.list_alerts(patient_id=patient_id, status=status, limit=limit)
 
+    def list_patient_alerts_paginated(
+        self,
+        patient_id: str,
+        status: Optional[str] = None,
+        severity: Optional[str] = None,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> tuple[List[Alert], int]:
+        """Query paginated alerts for a specific patient with optional status and severity filters."""
+        return self.alert_repo.list_patient_alerts_paginated(
+            patient_id=patient_id,
+            status=status,
+            severity=severity,
+            start_time=start_time,
+            end_time=end_time,
+            page=page,
+            page_size=page_size,
+        )
+
     def acknowledge_alert(
         self,
         alert_id: str,
@@ -55,6 +77,8 @@ class AlertService:
         Acknowledge an open alert atomically.
         Transitions state to ACKNOWLEDGED, creates an alert_status_history entry,
         and logs a security audit record within a single database transaction.
+        Idempotent: Re-acknowledging an already acknowledged alert returns the alert
+        without error and logs a repeated acknowledgement audit record.
         """
         with transaction_scope(self.session):
             alert = self.get_alert(alert_id)
@@ -64,6 +88,13 @@ class AlertService:
 
             if alert.status == "ACKNOWLEDGED":
                 logger.info("Alert '%s' is already acknowledged. Skipping state update.", alert_id)
+                self.audit_repo.record(
+                    actor_id=actor_id,
+                    action="ALERT_ACKNOWLEDGE_REPEATED",
+                    target_type="alert",
+                    target_id=alert_id,
+                    metadata_json=f'{{"patient_id": "{alert.patient_id}", "status": "ACKNOWLEDGED"}}',
+                )
                 return alert
 
             # Record state transition and history

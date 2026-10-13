@@ -713,6 +713,7 @@ class Alert(Base):
             "status IN ('NEW', 'ACKNOWLEDGED', 'RESOLVED')",
             name="ck_alerts_status",
         ),
+        UniqueConstraint("event_id", "rule_id", name="uq_alerts_event_rule"),
         Index("idx_alerts_patient_status_time", "patient_id", "status", "created_at"),
         Index("idx_alerts_status_created", "status", "created_at"),
     )
