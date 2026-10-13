@@ -72,15 +72,26 @@ class AlertEvaluator:
             return []
 
         triggered_alerts: List[Alert] = []
+        new_alerts: List[Alert] = []
 
         with transaction_scope(self.session):
             for reading in event.readings:
-                alerts_for_reading = self._evaluate_reading_in_tx(
+                alerts_for_reading, newly_created = self._evaluate_reading_in_tx(
                     reading=reading,
                     event=event,
                     allow_historical=allow_historical,
                 )
                 triggered_alerts.extend(alerts_for_reading)
+                new_alerts.extend(newly_created)
+
+        # Notify strictly AFTER transaction has committed
+        for alert in new_alerts:
+            try:
+                from services.websocket.dispatcher import notify_alert_created
+
+                notify_alert_created(alert)
+            except Exception as exc:
+                logger.warning("Failed to emit WebSocket alert.created: %s", exc)
 
         return triggered_alerts
 
@@ -102,15 +113,26 @@ class AlertEvaluator:
             return []
 
         triggered_alerts: List[Alert] = []
+        new_alerts: List[Alert] = []
 
         with transaction_scope(self.session):
             for reading in readings:
-                alerts_for_reading = self._evaluate_reading_in_tx(
+                alerts_for_reading, newly_created = self._evaluate_reading_in_tx(
                     reading=reading,
                     event=event,
                     allow_historical=allow_historical,
                 )
                 triggered_alerts.extend(alerts_for_reading)
+                new_alerts.extend(newly_created)
+
+        # Notify strictly AFTER transaction has committed
+        for alert in new_alerts:
+            try:
+                from services.websocket.dispatcher import notify_alert_created
+
+                notify_alert_created(alert)
+            except Exception as exc:
+                logger.warning("Failed to emit WebSocket alert.created: %s", exc)
 
         return triggered_alerts
 
@@ -119,9 +141,10 @@ class AlertEvaluator:
         reading: VitalsReading,
         event: IngestionEvent,
         allow_historical: bool = False,
-    ) -> List[Alert]:
+    ) -> tuple[List[Alert], List[Alert]]:
         """Internal helper to evaluate a single reading within an active transaction."""
         alerts: List[Alert] = []
+        newly_created: List[Alert] = []
 
         for rule in self.rules:
             if not rule.evaluate(reading):
@@ -184,7 +207,8 @@ class AlertEvaluator:
                     rule.rule_id,
                     reading.metric_code,
                 )
+                newly_created.append(persisted_alert)
 
             alerts.append(persisted_alert)
 
-        return alerts
+        return alerts, newly_created

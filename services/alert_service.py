@@ -114,6 +114,14 @@ class AlertService:
                 metadata_json=f'{{"patient_id": "{alert.patient_id}", "previous_status": "NEW"}}',
             )
 
+        # Emit real-time notification strictly AFTER transaction commits
+        try:
+            from services.websocket.dispatcher import notify_alert_acknowledged
+
+            notify_alert_acknowledged(alert, actor_id=actor_id, note=note)
+        except Exception as exc:
+            logger.warning("Failed to emit WebSocket alert.acknowledged event: %s", exc)
+
         return alert
 
     def resolve_alert(

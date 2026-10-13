@@ -27,6 +27,8 @@ from services.api.config import Settings, get_settings
 from services.api.routes.alerts import router as alerts_router
 from services.api.routes.auth import router as auth_router
 from services.api.routes.readings import router as readings_router
+from services.api.routes.websocket import router as ws_router
+from services.websocket.manager import connection_manager
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +38,8 @@ async def app_lifespan(app: FastAPI):
     """Application lifespan context manager managing startup and resource disposal."""
     logger.info("Initializing Smart Health Monitoring System API Gateway")
     yield
-    logger.info("Shutting down API Gateway: releasing database connection pools")
+    logger.info("Shutting down API Gateway: releasing resources")
+    await connection_manager.close_all()
     dispose_engine()
     close_mongo_client()
 
@@ -131,6 +134,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Mount Clinical Alerts Routers (both /api/v1 and root)
     app.include_router(alerts_router, prefix=app_settings.api_v1_prefix)
     app.include_router(alerts_router)
+
+    # Mount Real-Time WebSockets Router (both /api/v1 and root)
+    app.include_router(ws_router, prefix=app_settings.api_v1_prefix)
+    app.include_router(ws_router)
 
     return app
 
