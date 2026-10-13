@@ -1,0 +1,44 @@
+# =====================================================================
+# SMART HEALTH MONITORING SYSTEM — PYTHON DEPENDENCY MANIFEST
+# Compatible with Python >= 3.10 (Tested on Python 3.12.4)
+# =====================================================================
+
+# FastAPI Core Gateway & ASGI Server
+fastapi>=0.110.0,<1.0.0
+uvicorn[standard]>=0.23.0,<1.0.0
+pydantic>=2.7.0,<3.0.0
+pydantic-settings>=2.0.0,<3.0.0
+python-dotenv>=1.0.0,<2.0.0
+
+# Relational Persistence (MySQL 8 / InnoDB)
+sqlalchemy>=2.0.0,<3.0.0
+mysql-connector-python>=8.0.0
+pymysql>=1.1.0
+
+# Schema Migrations
+alembic>=1.13.0,<2.0.0
+
+# Document Database (MongoDB Atlas)
+pymongo>=4.6.0,<5.0.0
+dnspython>=2.4.0
+
+# Security & Authentication
+bcrypt>=4.0.0
+pyjwt>=2.8.0
+cryptography>=42.0.0
+
+# Machine Learning & Data Analytics
+scikit-learn>=1.4.0
+numpy>=1.26.0
+pandas>=2.2.0
+
+# DA3 Analytics Dashboard
+streamlit>=1.35.0
+
+# Real-time Telemetry
+websockets>=12.0
+
+# Quality Assurance & Testing
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+httpx>=0.27.0
