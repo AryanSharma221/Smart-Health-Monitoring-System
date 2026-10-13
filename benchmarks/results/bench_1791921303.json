@@ -1,0 +1,323 @@
+{
+  "metadata": {
+    "benchmark_run_id": "bench_1791921303",
+    "timestamp_utc": "2026-10-13T19:55:03.080502+00:00",
+    "duration_seconds": 3.06,
+    "warmup_iterations": 1,
+    "measured_iterations": 5,
+    "environment": {
+      "python_version": "3.12.4",
+      "system_os": "Windows",
+      "os_release": "11",
+      "machine": "AMD64"
+    }
+  },
+  "summary": {
+    "total_workloads": 7,
+    "equivalence_passed_count": 6,
+    "equivalence_failed_count": 1
+  },
+  "workload_results": [
+    {
+      "workload_id": "workload_a",
+      "name": "Dataset Overview",
+      "business_question": "What is the total size, time boundary, patient cohort, and source distribution of our telemetry mirror?",
+      "equivalence_passed": false,
+      "equivalence_error": "Equivalence failed at 'provenance_note': Value mismatch: SQL='Authoritative relational records from MySQL ingestion_events table.' vs Mongo='MongoDB analytics mirror reflects replicated telemetry events from MySQL outbox.'",
+      "sql_stats": {
+        "iterations": 5,
+        "median_ms": 1.616,
+        "mean_ms": 1.739,
+        "min_ms": 1.555,
+        "max_ms": 2.274,
+        "p95_ms": 2.274,
+        "stddev_ms": 0.301,
+        "raw_samples_ms": [
+          1.616,
+          1.662,
+          1.589,
+          2.274,
+          1.555
+        ]
+      },
+      "mongo_stats": {
+        "iterations": 5,
+        "median_ms": 52.308,
+        "mean_ms": 52.827,
+        "min_ms": 51.214,
+        "max_ms": 55.217,
+        "p95_ms": 55.217,
+        "stddev_ms": 1.701,
+        "raw_samples_ms": [
+          51.214,
+          51.484,
+          52.308,
+          55.217,
+          53.915
+        ]
+      },
+      "sql_item_count": 1,
+      "mongo_item_count": 1,
+      "speed_ratio": 0.03,
+      "query_plans": {}
+    },
+    {
+      "workload_id": "workload_b",
+      "name": "Patient Vitals Summary",
+      "business_question": "What are the baseline minimum, maximum, average, and observation counts for HR, SpO2, and Temp per patient?",
+      "equivalence_passed": true,
+      "equivalence_error": null,
+      "sql_stats": {
+        "iterations": 5,
+        "median_ms": 2.202,
+        "mean_ms": 2.294,
+        "min_ms": 2.149,
+        "max_ms": 2.627,
+        "p95_ms": 2.627,
+        "stddev_ms": 0.2,
+        "raw_samples_ms": [
+          2.202,
+          2.627,
+          2.332,
+          2.149,
+          2.162
+        ]
+      },
+      "mongo_stats": {
+        "iterations": 5,
+        "median_ms": 67.283,
+        "mean_ms": 67.238,
+        "min_ms": 65.818,
+        "max_ms": 68.69,
+        "p95_ms": 68.69,
+        "stddev_ms": 1.184,
+        "raw_samples_ms": [
+          67.283,
+          68.06,
+          68.69,
+          65.818,
+          66.341
+        ]
+      },
+      "sql_item_count": 1,
+      "mongo_item_count": 1,
+      "speed_ratio": 0.03,
+      "query_plans": {}
+    },
+    {
+      "workload_id": "workload_c",
+      "name": "Time-Window Filtering",
+      "business_question": "Retrieve bounded chronological observation events for a patient within a specific monitoring window.",
+      "equivalence_passed": true,
+      "equivalence_error": null,
+      "sql_stats": {
+        "iterations": 5,
+        "median_ms": 0.681,
+        "mean_ms": 0.568,
+        "min_ms": 0.316,
+        "max_ms": 0.744,
+        "p95_ms": 0.744,
+        "stddev_ms": 0.208,
+        "raw_samples_ms": [
+          0.731,
+          0.744,
+          0.368,
+          0.681,
+          0.316
+        ]
+      },
+      "mongo_stats": {
+        "iterations": 5,
+        "median_ms": 75.75,
+        "mean_ms": 75.704,
+        "min_ms": 60.283,
+        "max_ms": 85.676,
+        "p95_ms": 85.676,
+        "stddev_ms": 9.956,
+        "raw_samples_ms": [
+          85.676,
+          75.75,
+          83.128,
+          73.681,
+          60.283
+        ]
+      },
+      "sql_item_count": 0,
+      "mongo_item_count": 0,
+      "speed_ratio": 0.01,
+      "query_plans": {}
+    },
+    {
+      "workload_id": "workload_d",
+      "name": "Time-Bucket Analytics",
+      "business_question": "What are the hourly vital trends (observation volume, average HR, SpO2, Temp) for an acute monitoring patient?",
+      "equivalence_passed": true,
+      "equivalence_error": null,
+      "sql_stats": {
+        "iterations": 5,
+        "median_ms": 3.79,
+        "mean_ms": 3.946,
+        "min_ms": 3.512,
+        "max_ms": 4.975,
+        "p95_ms": 4.975,
+        "stddev_ms": 0.587,
+        "raw_samples_ms": [
+          4.975,
+          3.79,
+          3.512,
+          3.799,
+          3.655
+        ]
+      },
+      "mongo_stats": {
+        "iterations": 5,
+        "median_ms": 72.886,
+        "mean_ms": 71.85,
+        "min_ms": 68.968,
+        "max_ms": 73.743,
+        "p95_ms": 73.743,
+        "stddev_ms": 2.088,
+        "raw_samples_ms": [
+          73.743,
+          68.968,
+          73.324,
+          70.33,
+          72.886
+        ]
+      },
+      "sql_item_count": 177,
+      "mongo_item_count": 177,
+      "speed_ratio": 0.05,
+      "query_plans": {}
+    },
+    {
+      "workload_id": "workload_e",
+      "name": "Filtered Patient History",
+      "business_question": "Fetch the most recent 50 chronological observations for an individual patient with deterministic pagination.",
+      "equivalence_passed": true,
+      "equivalence_error": null,
+      "sql_stats": {
+        "iterations": 5,
+        "median_ms": 9.819,
+        "mean_ms": 11.737,
+        "min_ms": 9.343,
+        "max_ms": 15.13,
+        "p95_ms": 15.13,
+        "stddev_ms": 2.925,
+        "raw_samples_ms": [
+          9.658,
+          9.819,
+          9.343,
+          14.733,
+          15.13
+        ]
+      },
+      "mongo_stats": {
+        "iterations": 5,
+        "median_ms": 64.567,
+        "mean_ms": 74.06,
+        "min_ms": 60.037,
+        "max_ms": 96.105,
+        "p95_ms": 96.105,
+        "stddev_ms": 16.094,
+        "raw_samples_ms": [
+          63.342,
+          60.037,
+          64.567,
+          96.105,
+          86.248
+        ]
+      },
+      "sql_item_count": 50,
+      "mongo_item_count": 50,
+      "speed_ratio": 0.15,
+      "query_plans": {}
+    },
+    {
+      "workload_id": "workload_f",
+      "name": "Source & Provenance Summary",
+      "business_question": "How many telemetry records originate from historical Kaggle exports vs simulated test feeds?",
+      "equivalence_passed": true,
+      "equivalence_error": null,
+      "sql_stats": {
+        "iterations": 5,
+        "median_ms": 1.207,
+        "mean_ms": 1.088,
+        "min_ms": 0.865,
+        "max_ms": 1.269,
+        "p95_ms": 1.269,
+        "stddev_ms": 0.201,
+        "raw_samples_ms": [
+          1.207,
+          1.269,
+          0.875,
+          1.227,
+          0.865
+        ]
+      },
+      "mongo_stats": {
+        "iterations": 5,
+        "median_ms": 52.97,
+        "mean_ms": 69.264,
+        "min_ms": 47.268,
+        "max_ms": 142.549,
+        "p95_ms": 142.549,
+        "stddev_ms": 41.13,
+        "raw_samples_ms": [
+          47.619,
+          55.915,
+          142.549,
+          52.97,
+          47.268
+        ]
+      },
+      "sql_item_count": 1,
+      "mongo_item_count": 1,
+      "speed_ratio": 0.02,
+      "query_plans": {}
+    },
+    {
+      "workload_id": "workload_g",
+      "name": "Clinical Alert Analytics",
+      "business_question": "What is the distribution of clinical alerts by severity, lifecycle status, and acknowledgment performance?",
+      "equivalence_passed": true,
+      "equivalence_error": null,
+      "sql_stats": {
+        "iterations": 5,
+        "median_ms": 0.706,
+        "mean_ms": 0.738,
+        "min_ms": 0.631,
+        "max_ms": 0.827,
+        "p95_ms": 0.827,
+        "stddev_ms": 0.085,
+        "raw_samples_ms": [
+          0.825,
+          0.631,
+          0.706,
+          0.703,
+          0.827
+        ]
+      },
+      "mongo_stats": {
+        "iterations": 5,
+        "median_ms": 0.053,
+        "mean_ms": 0.047,
+        "min_ms": 0.029,
+        "max_ms": 0.062,
+        "p95_ms": 0.062,
+        "stddev_ms": 0.014,
+        "raw_samples_ms": [
+          0.029,
+          0.056,
+          0.062,
+          0.034,
+          0.053
+        ]
+      },
+      "sql_item_count": 1,
+      "mongo_item_count": 1,
+      "speed_ratio": 13.32,
+      "query_plans": {}
+    }
+  ]
+}

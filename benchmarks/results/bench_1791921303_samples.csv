@@ -1,0 +1,71 @@
+workload_id,workload_name,engine,iteration,latency_ms
+workload_a,Dataset Overview,MySQL/SQL,1,1.616
+workload_a,Dataset Overview,MySQL/SQL,2,1.662
+workload_a,Dataset Overview,MySQL/SQL,3,1.589
+workload_a,Dataset Overview,MySQL/SQL,4,2.274
+workload_a,Dataset Overview,MySQL/SQL,5,1.555
+workload_a,Dataset Overview,MongoDB,1,51.214
+workload_a,Dataset Overview,MongoDB,2,51.484
+workload_a,Dataset Overview,MongoDB,3,52.308
+workload_a,Dataset Overview,MongoDB,4,55.217
+workload_a,Dataset Overview,MongoDB,5,53.915
+workload_b,Patient Vitals Summary,MySQL/SQL,1,2.202
+workload_b,Patient Vitals Summary,MySQL/SQL,2,2.627
+workload_b,Patient Vitals Summary,MySQL/SQL,3,2.332
+workload_b,Patient Vitals Summary,MySQL/SQL,4,2.149
+workload_b,Patient Vitals Summary,MySQL/SQL,5,2.162
+workload_b,Patient Vitals Summary,MongoDB,1,67.283
+workload_b,Patient Vitals Summary,MongoDB,2,68.06
+workload_b,Patient Vitals Summary,MongoDB,3,68.69
+workload_b,Patient Vitals Summary,MongoDB,4,65.818
+workload_b,Patient Vitals Summary,MongoDB,5,66.341
+workload_c,Time-Window Filtering,MySQL/SQL,1,0.731
+workload_c,Time-Window Filtering,MySQL/SQL,2,0.744
+workload_c,Time-Window Filtering,MySQL/SQL,3,0.368
+workload_c,Time-Window Filtering,MySQL/SQL,4,0.681
+workload_c,Time-Window Filtering,MySQL/SQL,5,0.316
+workload_c,Time-Window Filtering,MongoDB,1,85.676
+workload_c,Time-Window Filtering,MongoDB,2,75.75
+workload_c,Time-Window Filtering,MongoDB,3,83.128
+workload_c,Time-Window Filtering,MongoDB,4,73.681
+workload_c,Time-Window Filtering,MongoDB,5,60.283
+workload_d,Time-Bucket Analytics,MySQL/SQL,1,4.975
+workload_d,Time-Bucket Analytics,MySQL/SQL,2,3.79
+workload_d,Time-Bucket Analytics,MySQL/SQL,3,3.512
+workload_d,Time-Bucket Analytics,MySQL/SQL,4,3.799
+workload_d,Time-Bucket Analytics,MySQL/SQL,5,3.655
+workload_d,Time-Bucket Analytics,MongoDB,1,73.743
+workload_d,Time-Bucket Analytics,MongoDB,2,68.968
+workload_d,Time-Bucket Analytics,MongoDB,3,73.324
+workload_d,Time-Bucket Analytics,MongoDB,4,70.33
+workload_d,Time-Bucket Analytics,MongoDB,5,72.886
+workload_e,Filtered Patient History,MySQL/SQL,1,9.658
+workload_e,Filtered Patient History,MySQL/SQL,2,9.819
+workload_e,Filtered Patient History,MySQL/SQL,3,9.343
+workload_e,Filtered Patient History,MySQL/SQL,4,14.733
+workload_e,Filtered Patient History,MySQL/SQL,5,15.13
+workload_e,Filtered Patient History,MongoDB,1,63.342
+workload_e,Filtered Patient History,MongoDB,2,60.037
+workload_e,Filtered Patient History,MongoDB,3,64.567
+workload_e,Filtered Patient History,MongoDB,4,96.105
+workload_e,Filtered Patient History,MongoDB,5,86.248
+workload_f,Source & Provenance Summary,MySQL/SQL,1,1.207
+workload_f,Source & Provenance Summary,MySQL/SQL,2,1.269
+workload_f,Source & Provenance Summary,MySQL/SQL,3,0.875
+workload_f,Source & Provenance Summary,MySQL/SQL,4,1.227
+workload_f,Source & Provenance Summary,MySQL/SQL,5,0.865
+workload_f,Source & Provenance Summary,MongoDB,1,47.619
+workload_f,Source & Provenance Summary,MongoDB,2,55.915
+workload_f,Source & Provenance Summary,MongoDB,3,142.549
+workload_f,Source & Provenance Summary,MongoDB,4,52.97
+workload_f,Source & Provenance Summary,MongoDB,5,47.268
+workload_g,Clinical Alert Analytics,MySQL/SQL,1,0.825
+workload_g,Clinical Alert Analytics,MySQL/SQL,2,0.631
+workload_g,Clinical Alert Analytics,MySQL/SQL,3,0.706
+workload_g,Clinical Alert Analytics,MySQL/SQL,4,0.703
+workload_g,Clinical Alert Analytics,MySQL/SQL,5,0.827
+workload_g,Clinical Alert Analytics,MongoDB,1,0.029
+workload_g,Clinical Alert Analytics,MongoDB,2,0.056
+workload_g,Clinical Alert Analytics,MongoDB,3,0.062
+workload_g,Clinical Alert Analytics,MongoDB,4,0.034
+workload_g,Clinical Alert Analytics,MongoDB,5,0.053
