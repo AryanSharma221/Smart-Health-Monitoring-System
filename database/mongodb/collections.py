@@ -41,6 +41,12 @@ TELEMETRY_INDEXES = [
         "keys": [("is_simulated", 1)],
         "unique": False,
     },
+    {
+        "name": "idx_telemetry_source_event_id",
+        "keys": [("source_event_id", 1)],
+        "unique": False,
+        "sparse": True,
+    },
 ]
 
 ALERT_INDEXES = [

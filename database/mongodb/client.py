@@ -135,6 +135,7 @@ def ensure_indexes(db: Database) -> Dict[str, List[str]]:
             idx_spec["keys"],
             name=idx_spec["name"],
             unique=idx_spec.get("unique", False),
+            sparse=idx_spec.get("sparse", False),
             background=True,
         )
         created_indexes[TELEMETRY_COLLECTION].append(name)
@@ -146,6 +147,7 @@ def ensure_indexes(db: Database) -> Dict[str, List[str]]:
             idx_spec["keys"],
             name=idx_spec["name"],
             unique=idx_spec.get("unique", False),
+            sparse=idx_spec.get("sparse", False),
             background=True,
         )
         created_indexes[ALERTS_COLLECTION].append(name)
