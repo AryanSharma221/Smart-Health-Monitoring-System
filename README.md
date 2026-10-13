@@ -26,13 +26,34 @@ copy .env.example .env
 ```
 *Note: Never commit `.env` or any files containing credentials to version control.*
 
-### Step 3: Run Configuration Unit Tests
+### Step 3: Run Unit Tests (Isolated In-Memory SQLite)
 ```bash
-python -m pytest tests/unit/test_config.py -v
+python -m pytest tests/unit/ -v
 ```
 
-### Step 4: Run FastAPI Gateway Locally
+### Step 4: Generate or Apply MySQL Database Migrations (Alembic)
+Generate offline MySQL 8 DDL without connecting to a live database:
+```bash
+python -m alembic upgrade head --sql
+```
+Apply migrations directly to the configured MySQL instance (when online):
+```bash
+python -m alembic upgrade head
+```
+
+### Step 5: Run FastAPI Gateway Locally
 ```bash
 uvicorn services.api.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 Visit http://127.0.0.1:8000/docs for the interactive OpenAPI documentation.
+
+## 3. Database Architecture (MySQL 8 InnoDB)
+The relational system of record consists of 15 normalized tables:
+- **Dataset Provenance:** `import_batches`
+- **Identity & RBAC:** `users`, `patient_profiles`, `doctor_profiles`, `doctor_patient_assignments`
+- **Telemetry & Readings:** `ingestion_events`, `vitals_readings` (stores canonical decimal values and units alongside raw ingested inputs)
+- **Clinical Rules & Baselines:** `alert_rules`, `patient_baselines`
+- **ML & Alerts:** `model_assessments`, `alerts`, `alert_status_history`, `notification_deliveries`
+- **Direct Messaging & Compliance:** `messages`, `audit_logs`
+
+DDL artifacts are available at `database/mysql/schema.sql`.
