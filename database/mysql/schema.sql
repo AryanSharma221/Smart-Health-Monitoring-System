@@ -488,3 +488,119 @@ BEGIN
     END IF;
 END$$
 DELIMITER ;
+
+-- Function: fn_calculate_fever_category
+-- Categorizes physiological temperature into Normal, Low-Grade, or High Fever
+DELIMITER $$
+CREATE FUNCTION IF NOT EXISTS fn_calculate_fever_category(p_temp_f DECIMAL(5, 2))
+RETURNS VARCHAR(20)
+DETERMINISTIC
+NO SQL
+BEGIN
+    IF p_temp_f IS NULL THEN
+        RETURN 'Unknown';
+    ELSEIF p_temp_f >= 102.0 THEN
+        RETURN 'High Fever';
+    ELSEIF p_temp_f >= 100.4 THEN
+        RETURN 'Low-Grade Fever';
+    ELSEIF p_temp_f < 95.0 THEN
+        RETURN 'Hypothermia';
+    ELSE
+        RETURN 'Normal';
+    END IF;
+END$$
+DELIMITER ;
+
+-- Stored Procedure: sp_evaluate_patient_alerts (Demonstrates CURSOR usage)
+-- Iterates chronologically over recent vital observations using a cursor
+DELIMITER $$
+CREATE PROCEDURE IF NOT EXISTS sp_evaluate_patient_alerts(
+    IN p_patient_id VARCHAR(32),
+    OUT p_flagged_count INT
+)
+BEGIN
+    DECLARE v_done INT DEFAULT FALSE;
+    DECLARE v_reading_id VARCHAR(64);
+    DECLARE v_metric_code VARCHAR(32);
+    DECLARE v_val DECIMAL(8, 2);
+    DECLARE v_count INT DEFAULT 0;
+
+    DECLARE cur_vitals CURSOR FOR 
+        SELECT reading_id, metric_code, value 
+        FROM vitals_readings 
+        WHERE patient_id = p_patient_id 
+        ORDER BY measured_at DESC 
+        LIMIT 100;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_done = TRUE;
+
+    OPEN cur_vitals;
+    read_loop: LOOP
+        FETCH cur_vitals INTO v_reading_id, v_metric_code, v_val;
+        IF v_done THEN
+            LEAVE read_loop;
+        END IF;
+
+        IF v_metric_code = 'heart_rate' AND (v_val < 40 OR v_val > 140) THEN
+            SET v_count = v_count + 1;
+        ELSEIF v_metric_code = 'spo2' AND v_val < 90.0 THEN
+            SET v_count = v_count + 1;
+        END IF;
+    END LOOP;
+    CLOSE cur_vitals;
+
+    SET p_flagged_count = v_count;
+END$$
+DELIMITER ;
+
+-- Stored Procedure: sp_safe_patient_discharge (Demonstrates ACID Transactions & SAVEPOINTS)
+-- Executes multi-table transactional deactivation with SAVEPOINT and ROLLBACK handler
+DELIMITER $$
+CREATE PROCEDURE IF NOT EXISTS sp_safe_patient_discharge(
+    IN p_patient_id VARCHAR(32),
+    IN p_doctor_id VARCHAR(32),
+    IN p_discharge_notes TEXT
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    START TRANSACTION;
+
+    -- Step 1: Establish safe checkpoint
+    SAVEPOINT sp_before_assignment_closure;
+
+    -- Step 2: Deactivate clinician-patient assignment
+    UPDATE doctor_patient_assignments
+    SET is_active = FALSE,
+        notes = CONCAT(COALESCE(notes, ''), ' [Discharged: ', CURRENT_TIMESTAMP, '] ', COALESCE(p_discharge_notes, ''))
+    WHERE patient_id = p_patient_id AND doctor_id = p_doctor_id;
+
+    -- Step 3: Resolve open clinical alerts
+    SAVEPOINT sp_before_alert_resolution;
+
+    UPDATE alerts
+    SET status = 'RESOLVED',
+        resolved_at = CURRENT_TIMESTAMP,
+        resolved_by = p_doctor_id
+    WHERE patient_id = p_patient_id AND status IN ('NEW', 'ACKNOWLEDGED');
+
+    -- Step 4: Record audit log entry
+    INSERT INTO audit_logs (log_id, action, target_type, target_id, actor_id, metadata_json, created_at)
+    VALUES (
+        UUID(),
+        'PATIENT_DISCHARGE',
+        'patient_profiles',
+        p_patient_id,
+        p_doctor_id,
+        JSON_OBJECT('discharged_by', p_doctor_id, 'notes', p_discharge_notes),
+        CURRENT_TIMESTAMP
+    );
+
+    COMMIT;
+END$$
+DELIMITER ;
+
