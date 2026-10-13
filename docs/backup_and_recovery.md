@@ -1,177 +1,238 @@
-# Database Backup, Disaster Recovery, and Synchronization Runbook
+# Database Backup, Disaster Recovery, and Operational Readiness Runbook
 
 > [!IMPORTANT]
 > **DISASTER RECOVERY RUNBOOK — CRITICAL OPERATIONAL PROCEDURES**  
-> This runbook defines the authoritative backup and recovery strategy for the **Smart Health Monitoring System**. All recovery operations must be performed first in an isolated staging environment before promoting to production.
+> This runbook defines the authoritative backup, recovery, verification, and access control strategy for the **Smart Health Monitoring System**. All recovery operations must be performed first in an isolated recovery environment (e.g., `smart_health_recovery`, `smart_health_analytics_recovery`) before promoting to production.
 
 ---
 
-## 1. Disaster Recovery Objectives & Scope
+## 1. Operational Evidence Table
 
-| Objective | Target | Operational Mechanism |
+| Procedure | Tool / Script | Status | Verification Evidence | Notes & Safety Boundaries |
+|:---|:---|:---|:---|:---|
+| **MySQL Logical Backup** | `scripts/backup_mysql.py` | **Verified** | `test_mysql_backup_dry_run`, `test_mysql_backup_collision_detection` | Uses `mysqldump 8.4` with `--single-transaction`, `--routines`, `--triggers`, `--events`, `--hex-blob`, SHA-256, and JSON manifest. Password passed via `MYSQL_PWD` (no CLI exposure). |
+| **MongoDB Analytics Backup** | `scripts/backup_mongodb.py` | **Verified** | `test_mongodb_logical_export_and_restore_mongomock` | Dual-mode: Native `mongodump` when installed; fallback to driver-based PyMongo logical bundle (`.tar.gz`) capturing documents and index specifications. URI credentials redacted. |
+| **MySQL Isolated Restore** | `scripts/restore_mysql.py` | **Verified** | `test_mysql_restore_safety_guard_blocks_production` | Restores to isolated database `smart_health_recovery`. Strictly blocks restoring over production without explicit `--force-production` override. Pre-checks SHA-256 checksum. |
+| **MongoDB Isolated Restore** | `scripts/restore_mongodb.py` | **Verified** | `test_mongodb_restore_safety_guard_blocks_production`, `test_mongodb_logical_export_and_restore_mongomock` | Restores into `smart_health_analytics_recovery`. Rebuilds collection documents and recreates indexes. Strictly blocks restoring over production without `--force-production`. |
+| **Recovery Verification** | `scripts/verify_recovery.py` | **Verified** | `test_automated_recovery_verification_mongodb`, `test_sha256_checksum_verification_and_corruption_detection` | Validates file existence, non-zero size, SHA-256 match, test restore execution, core tables/collections, record counts, and sample analytical queries. |
+| **Retention & Pruning** | `scripts/cleanup_backups.py` | **Verified** | `test_backup_cleanup_retention_and_dry_run`, `test_backup_cleanup_path_boundary_safety` | Enforces retention policy (default: keep 7 newest backup sets). Deletes matched companion files (`.sha256`, `.manifest.json`). Confined strictly to backup roots with path traversal prevention. Defaults to dry-run mode. |
+| **Least-Privilege RBAC** | `provision_least_privilege_users.sql` | **Documented** | DDL script with explicit grants | Provisions 5 dedicated roles with minimal permissions. Zero administrative wildcards for application or analytics accounts. |
+
+---
+
+## 2. Disaster Recovery Objectives & Scope
+
+| Metric | Target | Operational Mechanism |
 |:---|:---|:---|
-| **Recovery Point Objective (RPO)** | **< 15 minutes** | Daily logical backups + MySQL Binary Logging (`binlog`) |
-| **Recovery Time Objective (RTO)** | **< 30 minutes** | Automated restoration scripts & pre-provisioned warm instances |
-| **Data Scope (Authoritative)** | **100% of MySQL** | Users, Profiles, Readings, Alerts, Messages, Audits, Outbox |
-| **Data Scope (Secondary Mirror)** | **Rebuildable** | MongoDB Atlas collections can be fully re-synchronized from MySQL |
+| **Recovery Point Objective (RPO)** | **< 15 minutes** | Daily logical dumps + continuous MySQL binary logs (`binlog`) |
+| **Recovery Time Objective (RTO)** | **< 30 minutes** | Automated restore scripts, pre-flight checksum verification, and scripted recovery verification |
+| **Authoritative Store (MySQL)** | **100% Lossless Recovery** | Users, Profiles, Assignments, Readings, Alerts, Conversations, Messages, Audits, Outbox |
+| **Secondary Mirror (MongoDB)** | **Rebuildable & Resilient** | MongoDB Atlas telemetry and alert mirrors can be reconstructed idempotently from MySQL |
 
 ---
 
-## 2. MySQL Backup Strategy
+## 3. Least-Privilege Database Access Control
 
-### A. Logical Full Backup via `mysqldump`
-Execute daily automated backups during off-peak hours using consistent non-blocking snapshot flags:
+To enforce the Principle of Least Privilege (PoLP) and segregation of duties, the database architecture segregates operations across 5 distinct user accounts defined in `database/mysql/provision_least_privilege_users.sql`:
+
+| User Account | Primary Role | Granted Privileges | Prohibited Operations |
+|:---|:---|:---|:---|
+| `smart_health_app` | FastAPI Application Runtime | `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `EXECUTE` on `smart_health.*` | `DROP`, `ALTER`, `CREATE`, `SUPER`, `GRANT`, `FILE` |
+| `smart_health_analytics` | Streamlit & BI Read-Only Reader | `SELECT`, `SHOW VIEW` on `smart_health.*` | All DML (`INSERT`, `UPDATE`, `DELETE`), DDL (`CREATE`, `ALTER`, `DROP`) |
+| `smart_health_migrator` | Alembic Schema Migrator | Full DDL (`CREATE`, `ALTER`, `DROP`, `INDEX`, `REFERENCES`), `TRIGGER`, `ROUTINE` on `smart_health.*` | Global server administration, access to system databases |
+| `smart_health_backup` | Automated Backup Agent (`mysqldump`) | `SELECT`, `LOCK TABLES`, `SHOW VIEW`, `TRIGGER`, `EVENT` on `smart_health.*`; `PROCESS` on `*.*` | `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER` |
+| `smart_health_admin` | Emergency DBA & Disaster Recovery | `ALL PRIVILEGES` on `smart_health.*` and `smart_health_recovery.*`; `PROCESS`, `SHOW DATABASES` | System shutdown, unrestricted file modification |
+
+### Provisioning Least-Privilege Accounts
+Execute as MySQL administrative root:
 
 ```bash
-#!/usr/bin/env bash
-# /opt/scripts/backup_mysql.sh
-set -euo pipefail
+# Linux / macOS
+mysql -u root -p < database/mysql/provision_least_privilege_users.sql
 
-BACKUP_DIR="/var/backups/smart_health"
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-BACKUP_FILE="${BACKUP_DIR}/smart_health_${TIMESTAMP}.sql.gz"
-ENC_BACKUP_FILE="${BACKUP_FILE}.gpg"
-
-mkdir -p "${BACKUP_DIR}"
-
-echo "[INFO] Starting consistent logical backup of 'smart_health' database..."
-mysqldump \
-  --host="${MYSQL_HOST:-localhost}" \
-  --port="${MYSQL_PORT:-3306}" \
-  --user="${MYSQL_BACKUP_USER:-backup_agent}" \
-  --password="${MYSQL_BACKUP_PASSWORD}" \
-  --single-transaction \
-  --quick \
-  --routines \
-  --triggers \
-  --events \
-  --hex-blob \
-  --default-character-set=utf8mb4 \
-  smart_health | gzip -9 > "${BACKUP_FILE}"
-
-echo "[INFO] Encrypting backup with GPG..."
-gpg --batch --yes --encrypt --recipient ops@hospital.org "${BACKUP_FILE}"
-rm -f "${BACKUP_FILE}"
-
-echo "[INFO] Backup created successfully: ${ENC_BACKUP_FILE}"
+# Windows PowerShell
+Get-Content database/mysql/provision_least_privilege_users.sql | mysql -u root -p
 ```
-
-### B. Backup Storage & Retention Policy
-1. **Local Retention**: Keep 7 days of compressed, encrypted backups on local disk.
-2. **Offsite Cloud Retention**: Replicate daily backups to object storage (AWS S3 Glacier / Azure Blob Storage) with Object Lock (WORM policy) for 365 days compliance.
-3. **Continuous Binary Logs (`binlog`)**: Archive MySQL binary logs every 10 minutes for point-in-time recovery.
 
 ---
 
-## 3. Step-by-Step MySQL Restoration Runbook
+## 4. Backup Strategy and Tooling
 
-### Step 1: Prepare Isolated Recovery Database
-Never restore directly over an active database. Always restore into a designated validation schema or isolated database instance:
+### A. MySQL Logical Backup (`scripts/backup_mysql.py`)
+Executes an atomic, non-locking snapshot using `mysqldump` with transaction isolation:
 
-```bash
-mysql -u root -p -e "CREATE DATABASE smart_health_recovery CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+```powershell
+# Windows PowerShell
+python -m scripts.backup_mysql --compress --output-dir backups/mysql
+
+# Dry-run validation
+python -m scripts.backup_mysql --dry-run
 ```
 
-### Step 2: Decrypt and Decompress Backup Artifact
-```bash
-gpg --decrypt smart_health_20261013_020000.sql.gz.gpg | gunzip > /tmp/restore_payload.sql
+**Key Features:**
+- Flags enforced: `--single-transaction`, `--quick`, `--routines`, `--triggers`, `--events`, `--hex-blob`, `--default-character-set=utf8mb4`.
+- Collision avoidance: Appends microseconds if multiple backups are triggered in the same second.
+- Companion artifacts generated:
+  - `<backup_name>.sql.gz`: Compressed SQL dump payload.
+  - `<backup_name>.sql.gz.sha256`: Cryptographic SHA-256 checksum file.
+  - `<backup_name>.sql.gz.manifest.json`: Structured metadata containing timestamp, size, flags, and checksum.
+- Secret masking: Password passed via `MYSQL_PWD` subprocess environment variable, preventing command-line visibility.
+
+### B. MongoDB Analytics Mirror Backup (`scripts/backup_mongodb.py`)
+Exports the NoSQL analytics mirror collections (`telemetry_events`, `alert_events`):
+
+```powershell
+# Windows PowerShell
+python -m scripts.backup_mongodb --output-dir backups/mongodb
+
+# Dry-run validation
+python -m scripts.backup_mongodb --dry-run
 ```
 
-### Step 3: Ingest SQL Dump into Recovery Database
-```bash
-mysql -u root -p smart_health_recovery < /tmp/restore_payload.sql
-rm -f /tmp/restore_payload.sql
+**Key Features:**
+- Dual-mode execution:
+  1. *Native mongodump*: Used if MongoDB Database Tools are found on the system.
+  2. *Driver-based logical bundle*: Pure Python fallback streaming BSON documents and index specifications into a compressed `.tar.gz` bundle.
+- Credential redaction: All connection strings in manifests and logs are sanitized via `sanitize_mongo_uri()`.
+- Generates companion `.sha256` and `.manifest.json` files for tamper-evident tracking.
+
+---
+
+## 5. Restoration Runbooks and Safety Guards
+
+### A. Safety Guard: Production Overwrite Prohibition
+To prevent accidental data loss in production, both `restore_mysql.py` and `restore_mongodb.py` **block execution** if the target database matches the production configuration (`smart_health` or `smart_health_analytics`), unless the `--force-production` flag is explicitly provided.
+
+### B. MySQL Isolated Restoration Runbook
+Restores a backup archive into the isolated verification database `smart_health_recovery`:
+
+```powershell
+# Step 1: Execute restore into smart_health_recovery
+python -m scripts.restore_mysql `
+    --backup-file backups/mysql/mysql_smart_health_20261014_014600.sql.gz `
+    --target-db smart_health_recovery
+
+# Dry-run plan verification
+python -m scripts.restore_mysql `
+    --backup-file backups/mysql/mysql_smart_health_20261014_014600.sql.gz `
+    --dry-run
 ```
 
-### Step 4: Validate Data Integrity and Schema Revision
-Execute validation queries to confirm record counts, relationships, and migration consistency:
+### C. MongoDB Isolated Restoration Runbook
+Restores an analytics backup bundle into `smart_health_analytics_recovery`:
+
+```powershell
+# Step 1: Execute restore into smart_health_analytics_recovery
+python -m scripts.restore_mongodb `
+    --backup-file backups/mongodb/mongodb_smart_health_analytics_20261014_014700.tar.gz `
+    --target-db smart_health_analytics_recovery
+
+# Dry-run plan verification
+python -m scripts.restore_mongodb `
+    --backup-file backups/mongodb/mongodb_smart_health_analytics_20261014_014700.tar.gz `
+    --dry-run
+```
+
+---
+
+## 6. Automated Recovery Verification (`scripts/verify_recovery.py`)
+
+The automated recovery verifier validates physical artifact integrity and performs live semantic assertions:
+
+```powershell
+# Verify physical file existence and SHA-256 checksums
+python -m scripts.verify_recovery `
+    --artifact-path backups/mysql/mysql_smart_health_20261014_014600.sql.gz
+
+# Execute full end-to-end recovery verification with test restore and query checks
+python -m scripts.verify_recovery `
+    --artifact-path backups/mysql/mysql_smart_health_20261014_014600.sql.gz `
+    --verify-restore `
+    --target-db smart_health_recovery
+```
+
+**Verification Steps Executed:**
+1. **Physical Artifact Audit**: File existence, non-zero file size, readable permissions.
+2. **Cryptographic Integrity**: Computes SHA-256 and matches against companion `.sha256` and `.manifest.json`.
+3. **Isolated Test Restore**: Restores data into an ephemeral or recovery database without touching production.
+4. **Schema Completeness Audit**: Verifies presence of core tables (`users`, `patient_profiles`, `vitals_readings`, `alerts`, etc.) or collections (`telemetry_events`, `alert_events`).
+5. **Record Count Audit**: Calculates row/document counts across all recovered entities.
+6. **Semantic Analytical Query**: Runs aggregate calculations (`AVG(heart_rate)`, `AVG(spo2)`) to verify that numeric data was not corrupted during decompression or ingestion.
+
+---
+
+## 7. Backup Retention and Pruning (`scripts/cleanup_backups.py`)
+
+Automates the pruning of obsolete backup sets based on retention policies:
+
+```powershell
+# Dry-run (default mode): see what would be deleted without removing files
+python -m scripts.cleanup_backups --keep-count 7
+
+# Execute real deletion across all backup directories
+python -m scripts.cleanup_backups --keep-count 7 --execute
+
+# Prune specific directory with 30-day retention window
+python -m scripts.cleanup_backups --backup-dir backups/mysql --keep-count 7 --keep-days 30 --execute
+```
+
+**Retention Rules:**
+- **Guaranteed Count Floor**: Always retains at least the newest `N` backup sets (`--keep-count`, default: 7), ensuring that backups are never wiped completely even during prolonged downtime.
+- **Atomic Deletions**: Deleting a primary archive automatically purges its companion `.sha256` and `.manifest.json` files.
+- **Path Security Boundary**: Verifies that candidates reside strictly inside designated backup root directories, preventing path traversal attacks (`../`).
+
+---
+
+## 8. Cross-Database Synchronization & Post-Restore Reconciliation
+
+When MySQL is restored to a previous point in time, MongoDB Atlas may contain newer events than MySQL, or may have missed events that occurred during downtime.
+
+```
+       +-----------------------+              +------------------------+
+       |   Authoritative Store |              |  NoSQL Analytics Mirror |
+       |      MySQL InnoDB     |              |     MongoDB Atlas      |
+       +-----------+-----------+              +-----------+------------+
+                   |                                      |
+                   | 1. Restored to Point-in-Time T0      | (May contain T0 + delta)
+                   |                                      |
+                   v                                      v
+       +-----------------------+              +------------------------+
+       |   analytics_outbox    |              | telemetry_events /     |
+       |  (Pending & Failed)   |              | alert_events           |
+       +-----------+-----------+              +-----------+------------+
+                   |                                      |
+                   | 2. Replay Outbox Worker              | 3. Idempotent Upsert
+                   +------------------------------------->|    (filter: _id = aggregate_id)
+```
+
+### Scenario A: Replaying Outbox Events (Idempotent Resync)
+Since MongoDB documents use the authoritative MySQL integer IDs as their primary key (`_id = event_id` for telemetry, `_id = alert_id` for alerts), replaying outbox events is **100% idempotent**:
 
 ```sql
-USE smart_health_recovery;
-
--- 1. Verify schema migration version
-SELECT version_num FROM alembic_version;
--- Expected output: '003_conversations_and_messaging'
-
--- 2. Verify core record counts
-SELECT 'users' AS table_name, count(*) AS count FROM users
-UNION ALL
-SELECT 'patient_profiles', count(*) FROM patient_profiles
-UNION ALL
-SELECT 'ingestion_events', count(*) FROM ingestion_events
-UNION ALL
-SELECT 'vitals_readings', count(*) FROM vitals_readings
-UNION ALL
-SELECT 'alerts', count(*) FROM alerts
-UNION ALL
-SELECT 'conversations', count(*) FROM conversations
-UNION ALL
-SELECT 'messages', count(*) FROM messages
-UNION ALL
-SELECT 'analytics_outbox', count(*) FROM analytics_outbox;
-
--- 3. Verify zero orphan records (referential integrity)
-SELECT count(*) AS orphan_readings 
-FROM vitals_readings r 
-LEFT JOIN patient_profiles p ON r.patient_id = p.patient_id 
-WHERE p.patient_id IS NULL;
--- Expected: 0
-```
-
-### Step 5: Safe Production Cutover
-Once validation passes:
-1. Put API into maintenance mode (`/health/ready` returns 503).
-2. Point application environment (`MYSQL_DATABASE=smart_health_recovery` or rename database).
-3. Restart API service and execute smoke tests.
-
----
-
-## 4. MongoDB Atlas Mirroring & Outbox Recovery
-
-> [!NOTE]
-> MongoDB Atlas is an asynchronous secondary mirror. If MongoDB Atlas data is lost or corrupted, the authoritative database (MySQL) is unaffected.
-
-### A. Diagnosing Outbox Synchronization Status
-Query MySQL `analytics_outbox` table to inspect backlog and failure counts:
-
-```sql
-SELECT status, count(*) AS count, min(created_at) AS oldest_entry, max(attempt_count) AS max_attempts
+-- Step 1: Inspect pending or failed outbox events in restored MySQL
+SELECT status, count(*) AS count, min(created_at) AS oldest, max(created_at) AS newest
 FROM analytics_outbox
 GROUP BY status;
-```
 
-### B. Recovering Failed or Stalled Outbox Events
-If network interruptions to MongoDB Atlas caused events to exhaust retries (`status = 'failed'`):
-
-```sql
--- 1. Inspect error messages
-SELECT outbox_id, event_type, aggregate_id, attempt_count, last_error
-FROM analytics_outbox
-WHERE status = 'failed'
-LIMIT 10;
-
--- 2. Reset failed entries for immediate retry once Atlas connectivity is restored
+-- Step 2: Reset any interrupted events to pending for automatic re-delivery
 UPDATE analytics_outbox
 SET status = 'pending', attempt_count = 0, last_error = NULL
-WHERE status = 'failed';
+WHERE status IN ('processing', 'failed');
 ```
 
-### C. Full Analytics Mirror Reconstruction Runbook
-If the entire MongoDB Atlas cluster was wiped or replaced:
+### Scenario B: Full MongoDB Mirror Reconstruction
+If MongoDB Atlas was destroyed or severely desynchronized, reconstruct the entire analytics mirror from authoritative MySQL records:
 
-1. **Create Collections and Indexes**:
-   Connect via `mongosh` and ensure target collections exist with proper unique indexes:
+1. **Flush MongoDB Mirror Collections**:
    ```javascript
-   use smart_health_analytics;
-   db.telemetry_events.createIndex({ patient_id: 1, measured_at: -1 });
-   db.alert_events.createIndex({ patient_id: 1, created_at: -1 });
-   db.alert_events.createIndex({ severity: 1, status: 1 });
+   // In mongosh connected to smart_health_analytics
+   db.telemetry_events.deleteMany({});
+   db.alert_events.deleteMany({});
    ```
 
-2. **Re-stage Events into Outbox**:
-   Since MongoDB documents use the MySQL primary key as `_id` (`_id: event_id` for telemetry, `_id: alert_id` for alerts), replaying records is **100% idempotent** and will never create duplicates:
+2. **Re-stage Ingestion Events into MySQL Outbox**:
    ```sql
-   -- Re-enqueue all historical telemetry events
+   -- Stage all historical ingestion events into outbox
    INSERT INTO analytics_outbox (event_type, aggregate_id, payload_json, status, attempt_count, max_attempts)
    SELECT 
        'telemetry_event',
@@ -186,15 +247,8 @@ If the entire MongoDB Atlas cluster was wiped or replaced:
        0,
        5
    FROM ingestion_events e
-   WHERE NOT EXISTS (
-       SELECT 1 FROM analytics_outbox o 
-       WHERE o.aggregate_id = e.event_id AND o.event_type = 'telemetry_event'
-   );
+   ON DUPLICATE KEY UPDATE status = 'pending', attempt_count = 0;
    ```
 
----
-
-## 5. Routine Backup Verification Drills
-
-- **Schedule**: First Monday of every month.
-- **Procedure**: Automate the restoration of the latest production backup into an ephemeral containerized MySQL instance, execute the validation script, and send a signed audit report to the DevOps team.
+3. **Trigger Synchronization Worker**:
+   Run the background synchronization service to stream all queued outbox records to MongoDB Atlas without duplicate creation.
