@@ -17,7 +17,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import BigInteger, Integer, case, desc, distinct, func, select, text
+from sqlalchemy import BigInteger, Integer, case, desc, distinct, func, or_, select, text
 from sqlalchemy.orm import Session
 
 from database.mongodb.analytics.validators import (
@@ -452,9 +452,9 @@ class SqlAnalyticsRepository:
             func.sum(case((VitalsReading.metric_code == "heart_rate", case((VitalsReading.value.is_(None), 1), else_=0)), else_=0)).label("null_hr"),
             func.sum(case((VitalsReading.metric_code == "spo2", case((VitalsReading.value.is_(None), 1), else_=0)), else_=0)).label("null_spo2"),
             func.sum(case((VitalsReading.metric_code == "temperature", case((VitalsReading.value.is_(None), 1), else_=0)), else_=0)).label("null_temp"),
-            func.sum(case((VitalsReading.metric_code == "heart_rate", case((VitalsReading.value < 30 | (VitalsReading.value > 250), 1), else_=0)), else_=0)).label("implausible_hr"),
-            func.sum(case((VitalsReading.metric_code == "spo2", case((VitalsReading.value < 50.0 | (VitalsReading.value > 100.0), 1), else_=0)), else_=0)).label("implausible_spo2"),
-            func.sum(case((VitalsReading.metric_code == "temperature", case((temp_f_expr < 90.0 | (temp_f_expr > 115.0), 1), else_=0)), else_=0)).label("implausible_temp"),
+            func.sum(case((VitalsReading.metric_code == "heart_rate", case((or_(VitalsReading.value < 30, VitalsReading.value > 250), 1), else_=0)), else_=0)).label("implausible_hr"),
+            func.sum(case((VitalsReading.metric_code == "spo2", case((or_(VitalsReading.value < 50.0, VitalsReading.value > 100.0), 1), else_=0)), else_=0)).label("implausible_spo2"),
+            func.sum(case((VitalsReading.metric_code == "temperature", case((or_(temp_f_expr < 90.0, temp_f_expr > 115.0), 1), else_=0)), else_=0)).label("implausible_temp"),
         )
         r_row = self.session.execute(stmt_readings).mappings().first()
 
