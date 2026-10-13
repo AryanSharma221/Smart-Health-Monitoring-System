@@ -126,6 +126,8 @@ def test_openapi_schema_generation_and_components(contract_settings: Settings):
     # Verify Core HTTP API Route Paths exist in OpenAPI
     expected_http_paths = [
         "/health",
+        "/health/live",
+        "/health/ready",
         "/health/db",
         "/health/mongodb",
         "/api/v1/auth/register",
@@ -154,8 +156,8 @@ def test_openapi_schema_generation_and_components(contract_settings: Settings):
 
 
 def test_system_health_endpoints_contract(contract_client: TestClient):
-    """Verify system health check responses conform to schemas."""
-    # 1. App health
+    """Verify system health, liveness, and readiness check responses conform to schemas."""
+    # 1. App health (general overview)
     resp = contract_client.get("/health")
     assert resp.status_code == status.HTTP_200_OK
     data = resp.json()
@@ -165,18 +167,55 @@ def test_system_health_endpoints_contract(contract_client: TestClient):
     assert data["is_simulated"] is True
     assert "SIMULATED DATA" in data["notice"]
 
-    # 2. DB health
+    # 2. Liveness probe (process running)
+    resp_live = contract_client.get("/health/live")
+    assert resp_live.status_code == status.HTTP_200_OK
+    live_data = resp_live.json()
+    assert live_data["status"] == "alive"
+    assert live_data["service"] == "Smart Health Monitoring System"
+
+    # 3. Readiness probe (authoritative DB operational)
+    resp_ready = contract_client.get("/health/ready")
+    assert resp_ready.status_code == status.HTTP_200_OK
+    ready_data = resp_ready.json()
+    assert ready_data["status"] == "ready"
+    assert ready_data["database"] == "connected"
+    assert "mongodb_mirror" in ready_data
+
+    # 4. DB health
     resp_db = contract_client.get("/health/db")
     assert resp_db.status_code == status.HTTP_200_OK
     db_data = resp_db.json()
     assert "status" in db_data
 
-    # 3. MongoDB health
+    # 5. MongoDB health
     resp_mongo = contract_client.get("/health/mongodb")
     assert resp_mongo.status_code == status.HTTP_200_OK
     mongo_data = resp_mongo.json()
     assert "outbox_queue" in mongo_data
     assert "database" in mongo_data
+
+
+def test_readiness_failure_when_authoritative_database_unreachable(
+    contract_client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """Verify that /health/ready returns 503 when MySQL is down, while /health/live remains 200."""
+    # Simulate database outage
+    import services.api.main as api_main
+    monkeypatch.setattr(api_main, "check_db_connectivity", lambda bind: False)
+
+    # 1. Readiness must return 503 Service Unavailable
+    resp_ready = contract_client.get("/health/ready")
+    assert resp_ready.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+    ready_body = resp_ready.json()
+    assert ready_body["status"] == "unready"
+    assert ready_body["database"] == "unreachable"
+
+    # 2. Process Liveness must still return 200 OK (process is still alive)
+    resp_live = contract_client.get("/health/live")
+    assert resp_live.status_code == status.HTTP_200_OK
+    assert resp_live.json()["status"] == "alive"
 
 
 def test_auth_endpoints_contract(

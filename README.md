@@ -5,12 +5,14 @@ Version 3.0 — Kaggle Dataset-Aligned DA3 Edition
 
 ## 1. Overview
 The Smart Health Monitoring System is an end-to-end telemetry and clinical decision-support prototype featuring:
-- **FastAPI Backend Gateway:** REST APIs, JWT authentication, and WebSocket live updates.
-- **MySQL 8 (InnoDB):** Authoritative transactional store for patients, doctors, assignments, canonical readings, alerts, and audit logs.
-- **MongoDB Atlas:** DA3 document mirror for telemetry events (`health_events`) and model assessments (`model_assessments`).
+- **FastAPI Backend Gateway:** REST APIs, JWT authentication, operational healthchecks, and WebSocket live updates.
+- **MySQL 8 (InnoDB):** Authoritative transactional store for patients, doctors, assignments, canonical readings, alerts, messages, and audit logs.
+- **MongoDB Atlas:** DA3 document mirror for telemetry events (`telemetry_events`) and clinical alerts (`alert_events`).
 - **Kaggle Historical Dataset:** 1,500 historical rows across 5 patients (`P101`–`P105`) with 3 vitals (`heart_rate`, `spo2`, `temperature_f`).
 - **ML Anomaly Detection:** Rolling-window feature extraction and unsupervised `Isolation Forest` analysis.
 - **Streamlit Analytics Dashboard:** DA3 SQL-vs-NoSQL performance benchmarking and aggregation visualizer.
+
+---
 
 ## 2. Quickstart & Configuration Setup
 
@@ -22,16 +24,20 @@ cd smart-health-monitoring
 ### Step 2: Configure Environment Variables
 Copy the template and configure your local settings:
 ```bash
+# Windows
 copy .env.example .env
+# Linux / macOS
+cp .env.example .env
 ```
-*Note: Never commit `.env` or any files containing credentials to version control.*
+*Note: Never commit `.env` or any files containing credentials to version control. For production, see `.env.production.template`.*
 
-### Step 3: Run Unit Tests (Isolated In-Memory SQLite)
+### Step 3: Run Full Automated Verification Suite
+Runs all 210 unit, integration, security regression, and end-to-end test cases:
 ```bash
-python -m pytest tests/unit/ -v
+python -m pytest tests/ -v
 ```
 
-### Step 4: Generate or Apply MySQL Database Migrations (Alembic)
+### Step 4: Database Migrations (Alembic)
 Generate offline MySQL 8 DDL without connecting to a live database:
 ```bash
 python -m alembic upgrade head --sql
@@ -58,13 +64,45 @@ uvicorn services.api.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 Visit http://127.0.0.1:8000/docs for the interactive OpenAPI documentation.
 
-## 3. Database Architecture (MySQL 8 InnoDB)
-The relational system of record consists of 15 normalized tables:
-- **Dataset Provenance:** `import_batches`
-- **Identity & RBAC:** `users`, `patient_profiles`, `doctor_profiles`, `doctor_patient_assignments`
-- **Telemetry & Readings:** `ingestion_events`, `vitals_readings` (stores canonical decimal values and units alongside raw ingested inputs)
-- **Clinical Rules & Baselines:** `alert_rules`, `patient_baselines`
-- **ML & Alerts:** `model_assessments`, `alerts`, `alert_status_history`, `notification_deliveries`
-- **Direct Messaging & Compliance:** `messages`, `audit_logs`
+---
 
-DDL artifacts are available at `database/mysql/schema.sql`.
+## 3. Containerized Deployment (Docker & Compose)
+
+### Launch Local Staging Environment (API + MySQL):
+```bash
+docker compose up -d --build
+```
+Check container status and logs:
+```bash
+docker compose ps
+docker compose logs -f api
+```
+
+### Build Hardened Production Container:
+```bash
+docker build -t smart-health-api:3.0.0 -f Dockerfile .
+```
+
+---
+
+## 4. Operational Health & Readiness Probes
+
+| Endpoint | Type | Purpose | Healthy Status | Failure Status |
+|:---|:---|:---|:---|:---|
+| `GET /health` | Liveness | Application metadata & simulated notice | 200 OK | Process down |
+| `GET /health/live` | Liveness | Kubernetes / Container liveness check | 200 OK | Process down |
+| `GET /health/ready` | Readiness | Authoritative MySQL connectivity check | 200 OK | 503 Service Unavailable |
+| `GET /health/db` | Diagnostic | Direct MySQL connectivity probe | 200 OK (`connected`) | 200 OK (`unreachable`) |
+| `GET /health/mongodb`| Diagnostic | MongoDB Atlas & outbox queue telemetry | 200 OK (`connected` / status) | Safe masked status |
+
+---
+
+## 5. Operations & Documentation Runbooks
+
+- [Production Deployment Guide](docs/deployment_guide.md): Server prerequisites, Nginx reverse proxy configuration, systemd units, and pre/post-deployment checklists.
+- [Backup and Recovery Runbook](docs/backup_and_recovery.md): MySQL `mysqldump` procedures, point-in-time recovery, isolated restoration verification, and MongoDB outbox recovery.
+- [Operational Architecture & Diagnostics](docs/operational_architecture.md): Process concurrency, WebSocket multi-node scaling boundaries, structured logging, and diagnostics.
+- [Dataset Ingestion Pipeline](docs/dataset_ingestion.md): Kaggle schema mapping, unit conversions, and idempotency guarantees.
+- [MongoDB Analytics Mirror](docs/mongodb_analytics_mirror.md): Transactional outbox pattern, collections, and disaster recovery.
+- [Real-Time WebSockets](docs/realtime_websockets.md): WebSocket handshake, connection lifecycle, and authorization.
+- [Clinical Messaging System](docs/messaging_system.md): End-to-end patient-clinician messaging and read tracking.

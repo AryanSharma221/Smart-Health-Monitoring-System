@@ -1,0 +1,43 @@
+# Git metadata & CI
+.git/
+.github/
+.gitignore
+
+# Environment files & Secrets (CRITICAL: NEVER embed in images)
+.env
+.env.*
+*.pem
+*.key
+*.cert
+*.crt
+secrets.json
+
+# Local Python caches & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+.coverage*
+*.log
+logs/
+
+# Test suites & artifacts (keep images minimal and secure)
+tests/
+restore_test_dumps/
+backups/
+
+# Datasets & local media (do not bundle large raw CSVs into images)
+*.csv
+E:/*
+
+# IDE and OS artifacts
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Documentation source files
+docs/

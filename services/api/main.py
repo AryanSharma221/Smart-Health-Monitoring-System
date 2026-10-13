@@ -12,7 +12,7 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Any, Dict
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
@@ -89,6 +89,52 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "environment": current_settings.app_env,
             "is_simulated": True,
             "notice": "SIMULATED DATA — NOT FOR MEDICAL USE",
+        }
+
+    @app.get("/health/live", tags=["System"])
+    async def liveness_check(
+        current_settings: Settings = Depends(get_settings),
+    ) -> Dict[str, Any]:
+        """
+        Process liveness probe for container orchestrators and supervisors.
+        Verifies that the ASGI event loop and application process are running.
+        Does not query external network dependencies.
+        """
+        return {
+            "status": "alive",
+            "service": current_settings.app_name,
+            "version": "3.0.0",
+        }
+
+    @app.get("/health/ready", tags=["System"])
+    def readiness_check(
+        response: Response,
+        current_settings: Settings = Depends(get_settings),
+        db: Session = Depends(get_db),
+    ) -> Dict[str, Any]:
+        """
+        Operational readiness probe for container orchestrators and load balancers.
+        - Requires authoritative MySQL connectivity to accept traffic.
+        - Reports optional MongoDB analytics mirror status without gating readiness.
+        - Returns 200 OK when ready to serve; returns 503 Service Unavailable when MySQL is down.
+        """
+        db_connected = check_db_connectivity(db.get_bind())
+        if not db_connected:
+            response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+            return {
+                "status": "unready",
+                "database": "unreachable",
+                "message": "Authoritative relational database is unavailable.",
+            }
+
+        is_mongo_connected, mongo_desc = check_mongo_connectivity(current_settings)
+        mongo_status = "connected" if is_mongo_connected else ("unconfigured" if not current_settings.mongodb_uri else "degraded")
+
+        return {
+            "status": "ready",
+            "database": "connected",
+            "mongodb_mirror": mongo_status,
+            "message": "Authoritative database operational. Ready to serve traffic.",
         }
 
     @app.get("/health/db", tags=["System"])

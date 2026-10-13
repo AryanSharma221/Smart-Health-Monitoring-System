@@ -1,0 +1,80 @@
+services:
+  # ---------------------------------------------------------------------------
+  # 1. FastAPI Application Gateway
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smart-health-api
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      - APP_NAME=${APP_NAME:-Smart Health Monitoring System}
+      - APP_ENV=${APP_ENV:-development}
+      - APP_DEBUG=${APP_DEBUG:-false}
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - API_V1_PREFIX=${API_V1_PREFIX:-/api/v1}
+      - CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:5173","http://127.0.0.1:5173"]}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      # MySQL connection inside Docker network
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-smart_health}
+      - MYSQL_USER=${MYSQL_USER:-smart_health_app}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_CONNECT_TIMEOUT=${MYSQL_CONNECT_TIMEOUT:-10}
+      - MYSQL_DRIVER=mysqlconnector
+      # MongoDB Atlas external cloud service (optional mirror)
+      - MONGODB_URI=${MONGODB_URI:-}
+      - MONGODB_DATABASE=${MONGODB_DATABASE:-smart_health_analytics}
+      # Authentication & Security
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      - INGESTION_API_KEY=${INGESTION_API_KEY}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - internal-net
+
+  # ---------------------------------------------------------------------------
+  # 2. Relational System of Record (MySQL 8.0 InnoDB)
+  # ---------------------------------------------------------------------------
+  mysql:
+    image: mysql:8.0
+    container_name: smart-health-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_secure_password_override}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-smart_health}
+      MYSQL_USER: ${MYSQL_USER:-smart_health_app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --explicit_defaults_for_timestamp=1
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${MYSQL_USER:-smart_health_app}", "-p${MYSQL_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - internal-net
+
+networks:
+  internal-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
