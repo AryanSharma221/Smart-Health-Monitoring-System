@@ -90,3 +90,33 @@ class PatientRepository:
         self.session.add(profile)
         self.session.flush()
         return profile
+
+    def assign_doctor_to_patient(
+        self,
+        doctor_id: str,
+        patient_id: str,
+        notes: Optional[str] = None,
+    ) -> DoctorPatientAssignment:
+        """Create or update a care assignment between clinician and patient."""
+        stmt = select(DoctorPatientAssignment).where(
+            DoctorPatientAssignment.doctor_id == doctor_id,
+            DoctorPatientAssignment.patient_id == patient_id,
+        )
+        existing = self.session.scalar(stmt)
+        if existing:
+            existing.is_active = True
+            if notes is not None:
+                existing.notes = notes
+            self.session.flush()
+            return existing
+
+        assignment = DoctorPatientAssignment(
+            doctor_id=doctor_id,
+            patient_id=patient_id,
+            is_active=True,
+            notes=notes,
+        )
+        self.session.add(assignment)
+        self.session.flush()
+        return assignment
+

@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from database.mysql.session import check_db_connectivity, dispose_engine, get_db
 from services.api.config import Settings, get_settings
+from services.api.routes.auth import router as auth_router
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "status": "connected" if connected else "unreachable",
             "database": "mysql_innodb",
         }
+
+    # Mount Authentication and Identity Routers (both /api/v1/auth and /auth)
+    app.include_router(auth_router, prefix=app_settings.api_v1_prefix)
+    app.include_router(auth_router)
 
     return app
 

@@ -25,6 +25,7 @@ from database.mysql.exceptions import (
     DatabaseError,
     EntityConflictError,
 )
+from starlette.exceptions import HTTPException
 from services.api.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -139,7 +140,7 @@ def transaction_scope(session: Session | None = None) -> Generator[Session, None
         s.rollback()
         logger.error("Database operational or connection error during transaction: %s", exc)
         raise DatabaseConnectionError("Database operation failed due to a connection or server error", original_exception=exc) from exc
-    except DatabaseError:
+    except (DatabaseError, HTTPException):
         s.rollback()
         raise
     except Exception as exc:
