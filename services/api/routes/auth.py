@@ -180,3 +180,35 @@ def verify_admin_access_endpoint(
         "user_id": current_user.user_id,
         "role": current_user.role,
     }
+
+
+@router.post(
+    "/logout",
+    status_code=status.HTTP_200_OK,
+    summary="Log out and record audit event",
+)
+def logout(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Dict[str, Any]:
+    """
+    Log out the current authenticated user and record audit log.
+    Client should discard its stored access token.
+    """
+    from database.mysql.repositories.audit_repository import AuditRepository
+
+    with transaction_scope(db) as session:
+        audit_repo = AuditRepository(session)
+        audit_repo.record(
+            action="AUTH_LOGOUT",
+            target_type="users",
+            target_id=current_user.user_id,
+            actor_id=current_user.user_id,
+            metadata_json=f'{{"role": "{current_user.role}"}}',
+        )
+    return {
+        "status": "success",
+        "message": "User logged out successfully.",
+        "user_id": current_user.user_id,
+    }
+

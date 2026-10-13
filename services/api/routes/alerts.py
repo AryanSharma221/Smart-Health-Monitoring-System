@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, status
 from sqlalchemy.orm import Session
@@ -31,6 +31,52 @@ router = APIRouter(tags=["Clinical Alerts"])
 
 VALID_STATUSES = {"NEW", "ACKNOWLEDGED", "RESOLVED"}
 VALID_SEVERITIES = {"LOW", "MEDIUM", "HIGH", "CRITICAL"}
+
+
+@router.get(
+    "/alerts",
+    response_model=List[AlertResponse],
+    status_code=status.HTTP_200_OK,
+    summary="List clinical alerts across scope",
+)
+def list_alerts(
+    patient_id: Optional[str] = Query(None, description="Optional patient filter"),
+    status_filter: Optional[str] = Query(None, alias="status", description="Filter by status (NEW, ACKNOWLEDGED, RESOLVED)"),
+    limit: int = Query(50, ge=1, le=100, description="Max alerts to retrieve"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> List[AlertResponse]:
+    """
+    List clinical alerts based on role and care relationship:
+    - Patients: restricted to their own alerts.
+    - Doctors: alerts for assigned patients (or specific assigned patient).
+    - Admins: global visibility.
+    """
+    alert_service = AlertService(db)
+    norm_status = status_filter.upper() if status_filter else None
+    if norm_status and norm_status not in VALID_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid status filter '{status_filter}'. Allowed values: {sorted(VALID_STATUSES)}.",
+        )
+
+    if current_user.role == "patient":
+        if patient_id and patient_id != current_user.user_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied.")
+        return alert_service.list_alerts(patient_id=current_user.user_id, status=norm_status, limit=limit)
+    elif current_user.role == "doctor":
+        if patient_id:
+            verify_patient_access(patient_id=patient_id, current_user=current_user, db=db)
+            return alert_service.list_alerts(patient_id=patient_id, status=norm_status, limit=limit)
+        from database.mysql.repositories.patient_repository import PatientRepository
+        patient_repo = PatientRepository(db)
+        assigned_patients = {p.patient_id for p in patient_repo.get_assigned_patients_for_doctor(current_user.user_id)}
+        all_alerts = alert_service.list_alerts(status=norm_status, limit=limit * 2)
+        return [a for a in all_alerts if a.patient_id in assigned_patients][:limit]
+    elif current_user.role == "admin_operator":
+        return alert_service.list_alerts(patient_id=patient_id, status=norm_status, limit=limit)
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied.")
 
 
 @router.get(
