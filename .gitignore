@@ -47,6 +47,8 @@ venv.bak/
 secrets.json
 
 # Database dumps and temporary backup artifacts
+*.db
+*.sqlite*
 *.dump
 *.sql.gz
 *.bak

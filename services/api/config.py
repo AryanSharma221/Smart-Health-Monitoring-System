@@ -16,7 +16,7 @@ import json
 import logging
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, List, Literal
+from typing import Any, List, Literal, Optional
 from urllib.parse import quote_plus, urlparse
 
 from pydantic import Field, field_validator, model_validator
@@ -99,6 +99,10 @@ class Settings(BaseSettings):
     mysql_driver: str = Field(
         default="mysqlconnector",
         description="SQLAlchemy driver name (e.g. mysqlconnector or pymysql)",
+    )
+    database_url: Optional[str] = Field(
+        default=None,
+        description="Optional database URL override (e.g. sqlite:///./smart_health_local.db)",
     )
 
     # -------------------------------------------------------------------------
@@ -255,6 +259,8 @@ class Settings(BaseSettings):
         Uses quote_plus so passwords containing '@', ':', '#', '%', '!', etc.
         never break connection string parsing.
         """
+        if self.database_url:
+            return self.database_url
         drv = driver or self.mysql_driver
         safe_user = quote_plus(self.mysql_user)
         safe_password = quote_plus(self.mysql_password)
@@ -265,7 +271,13 @@ class Settings(BaseSettings):
 
     def get_safe_mysql_url(self, driver: str | None = None) -> str:
         """Return database URL with password masked for safe logging and debugging."""
-        drv = driver or self.mysql_driver
+        if self.database_url:
+            if "@" in self.database_url:
+                prefix, rest = self.database_url.split("@", 1)
+                scheme = prefix.split("://")[0]
+                return f"{scheme}://***:***@{rest}"
+            return self.database_url
+        drv = self.mysql_driver
         safe_user = quote_plus(self.mysql_user)
         return (
             f"mysql+{drv}://{safe_user}:***"
