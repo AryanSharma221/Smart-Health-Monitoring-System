@@ -173,7 +173,7 @@ MONGODB_CONNECT_TIMEOUT_MS=5000
 
 ### Security & Sanitization Rules:
 - The centralized provider [`database/mongodb/client.py`](file:///C:/Users/Aryan/.gemini/antigravity/scratch/smart-health-monitoring/database/mongodb/client.py) strictly redacts credentials via `sanitize_mongo_uri`:
-  - `mongodb+srv://admin_user:Pass123@cluster0.mongodb.net/analytics` $\to$ `mongodb+srv://***:***@cluster0.mongodb.net/analytics`.
+  - `mongodb+srv://<username>:<password>@cluster0.mongodb.net/analytics` $\to$ `mongodb+srv://***:***@cluster0.mongodb.net/analytics`.
 - The API diagnostic endpoint `GET /health/mongodb` reports connection state and outbox queue lengths without leaking connection secrets.
 - Resources are released via `close_mongo_client()` in the FastAPI lifespan handler.
 

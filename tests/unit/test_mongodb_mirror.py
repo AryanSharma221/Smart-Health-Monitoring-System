@@ -82,7 +82,7 @@ def test_settings() -> Settings:
         jwt_secret="mongodb_mirror_test_secret_at_least_32_characters!",
         jwt_algorithm="HS256",
         access_token_expire_minutes=60,
-        mongodb_uri="mongodb+srv://test_user:SuperSecretPassword123@cluster0.test.mongodb.net/?retryWrites=true&w=majority",
+        mongodb_uri="mongodb://test_user:mock_pass@localhost:27017/?retryWrites=true&w=majority",
         mongodb_database="test_health_analytics",
         mongodb_server_selection_timeout_ms=1000,
         mongodb_connect_timeout_ms=1000,
@@ -143,11 +143,11 @@ def client(test_db_session: Session, test_settings: Settings) -> Generator[TestC
 
 def test_sanitize_mongo_uri_redacts_credentials():
     """Verify passwords and usernames are completely stripped from logged URIs."""
-    raw_uri = "mongodb+srv://admin_user:P@ssw0rd!#123@cluster0.test.mongodb.net/analytics?retryWrites=true"
+    raw_uri = "mongodb://admin_user:P@ssw0rd!#123@localhost:27017/analytics?retryWrites=true"
     sanitized = sanitize_mongo_uri(raw_uri)
     assert "admin_user" not in sanitized
     assert "P@ssw0rd!#123" not in sanitized
-    assert "mongodb+srv://***:***@cluster0.test.mongodb.net/analytics" in sanitized
+    assert "mongodb://***:***@localhost:27017/analytics" in sanitized
 
     # Empty and None cases
     assert sanitize_mongo_uri("") == "<not-configured>"

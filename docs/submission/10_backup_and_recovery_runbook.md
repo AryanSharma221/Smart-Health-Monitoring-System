@@ -88,7 +88,7 @@ If an administrator accidentally corrupts data at 14:35:00 UTC, the system is re
 ### 3.1 Logical Archive Backup (`mongodump`)
 ```bash
 mongodump \
-  --uri="mongodb+srv://user:pass@cluster0.mongodb.net/smart_health_analytics" \
+  --uri="mongodb+srv://${MONGODB_USER}:${MONGODB_PASS}@${MONGODB_CLUSTER}/smart_health_analytics" \
   --archive=/var/backups/mongo_analytics_$(date +%Y%m%d_%H%M%S).archive.gz \
   --gzip
 ```
@@ -96,7 +96,7 @@ mongodump \
 ### 3.2 Restoration via `mongorestore`
 ```bash
 mongorestore \
-  --uri="mongodb+srv://user:pass@cluster0.mongodb.net/smart_health_analytics" \
+  --uri="mongodb+srv://${MONGODB_USER}:${MONGODB_PASS}@${MONGODB_CLUSTER}/smart_health_analytics" \
   --archive=/var/backups/mongo_analytics_latest.archive.gz \
   --gzip \
   --drop

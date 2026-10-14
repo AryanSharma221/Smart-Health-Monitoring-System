@@ -149,7 +149,7 @@ All sensitive parameters are abstracted through `.env.example` templates. No rea
 | `MYSQL_DATABASE` | Relational database name | `smart_health` | Backend |
 | `MYSQL_USER` | Application database user | `smart_health_app` | Backend |
 | `MYSQL_PASSWORD` | Database password | `replace_with_secure_mysql_password` | Backend |
-| `MONGODB_URI` | MongoDB Atlas cluster URI | `mongodb+srv://user:pass@cluster.mongodb.net/?retryWrites=true&w=majority` | Backend |
+| `MONGODB_URI` | MongoDB Atlas cluster URI | `mongodb+srv://<username>:<password>@<cluster>.mongodb.net/?retryWrites=true&w=majority` | Backend |
 | `MONGODB_DATABASE` | Analytical document database | `smart_health_analytics` | Backend |
 | `JWT_SECRET` | Cryptographic secret for signing JWTs | `replace_with_min_32_char_random_secret_key` | Backend |
 | `JWT_ALGORITHM` | JWT signing algorithm | `HS256` | Backend |

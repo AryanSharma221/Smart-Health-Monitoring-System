@@ -59,7 +59,7 @@ class TestBackupAndRecovery:
         return Settings(
             mysql_database="smart_health",
             mongodb_database="smart_health_analytics",
-            mongodb_uri="mongodb+srv://admin_user:SuperSecretPassword123@cluster0.test.mongodb.net/?retryWrites=true",
+            mongodb_uri="mongodb://admin_user:mock_test_pass@localhost:27017/?retryWrites=true",
         )
 
     def test_mysql_backup_dry_run(self, tmp_path: Path, test_settings: Settings) -> None:
@@ -330,11 +330,11 @@ class TestBackupAndRecovery:
 
     def test_secret_redaction_in_mongo_uri(self) -> None:
         """Verify sensitive credentials in MongoDB connection strings are redacted."""
-        raw_uri = "mongodb+srv://admin_user:SuperSecretPassword123@cluster0.abcde.mongodb.net/test?retryWrites=true"
+        raw_uri = "mongodb://admin_user:mock_test_pass@localhost:27017/test?retryWrites=true"
         sanitized = sanitize_mongo_uri(raw_uri)
-        assert "SuperSecretPassword123" not in sanitized
+        assert "mock_test_pass" not in sanitized
         assert "***:***@" in sanitized
-        assert "cluster0.abcde.mongodb.net" in sanitized
+        assert "localhost:27017" in sanitized
 
         # URI without credentials
         plain_uri = "mongodb://localhost:27017/smart_health"

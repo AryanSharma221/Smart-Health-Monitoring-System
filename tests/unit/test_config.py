@@ -178,7 +178,7 @@ def test_mongodb_ready_validation():
         invalid_scheme.validate_mongodb_ready()
 
     valid_mongo = Settings(
-        mongodb_uri="mongodb+srv://user:pass@cluster.mongodb.net/?retryWrites=true"
+        mongodb_uri="mongodb://localhost:27017/?retryWrites=true"
     )
     # Should not raise
     valid_mongo.validate_mongodb_ready()
