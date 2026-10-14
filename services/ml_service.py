@@ -109,6 +109,7 @@ class MLService:
             actual_dataset = dataset_path
             if not actual_dataset.exists():
                 fallbacks = [
+                    Path(__file__).resolve().parent.parent / "data" / "raw" / "kaggle_health_dataset.csv",
                     Path(r"E:\kaggle_health_dataset.csv"),
                     Path(r"E:\DOC-20261013-WA0056.csv"),
                     Path(__file__).resolve().parent.parent.parent / "HarnoorKant-Smart-Health-Monitoring-System" / "data" / "raw" / "kaggle_health_dataset.csv",

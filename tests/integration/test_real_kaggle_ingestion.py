@@ -45,7 +45,19 @@ from services.ingestion.validator import (
     validate_kaggle_csv,
 )
 
-REAL_DATASET_PATH = Path(r"E:\kaggle_health_dataset.csv")
+def _resolve_test_dataset_path() -> Path:
+    candidates = [
+        Path(__file__).resolve().parent.parent.parent / "data" / "raw" / "kaggle_health_dataset.csv",
+        Path(r"E:\kaggle_health_dataset.csv"),
+        Path(r"E:\DOC-20261013-WA0056.csv"),
+    ]
+    for c in candidates:
+        if c.exists():
+            return c
+    return candidates[0]
+
+
+REAL_DATASET_PATH = _resolve_test_dataset_path()
 REAL_DOC_PATH = Path(r"E:\DOC-20261013-WA0056.csv")
 
 

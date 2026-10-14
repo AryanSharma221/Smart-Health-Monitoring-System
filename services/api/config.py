@@ -298,7 +298,15 @@ class Settings(BaseSettings):
         Resolve the configured dataset path.
         Does not raise if the file is missing; allows caller to check path.exists().
         """
-        return Path(self.kaggle_dataset_path).resolve()
+        configured = Path(self.kaggle_dataset_path).resolve()
+        if configured.exists():
+            return configured
+        # If default dataset path is configured but absent on non-Windows runner, check repo bundled copy
+        if "kaggle_health_dataset.csv" in configured.name or "DOC-20261013-WA0056" in configured.name:
+            repo_data = Path(__file__).resolve().parent.parent.parent / "data" / "raw" / "kaggle_health_dataset.csv"
+            if repo_data.exists():
+                return repo_data
+        return configured
 
     def resolve_model_artifact_dir(self) -> Path:
         """

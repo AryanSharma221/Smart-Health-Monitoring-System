@@ -35,8 +35,10 @@ def reset_settings_cache():
     get_settings.cache_clear()
 
 
-def test_default_development_settings():
+def test_default_development_settings(monkeypatch):
     """Verify non-sensitive default development settings."""
+    monkeypatch.delenv("APP_ENV", raising=False)
+    monkeypatch.delenv("MYSQL_PASSWORD", raising=False)
     settings = Settings()
     assert settings.app_name == "Smart Health Monitoring System"
     assert settings.app_env == "development"
