@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, status
 from sqlalchemy.orm import Session
@@ -111,21 +111,21 @@ def create_or_get_conversation(
     if current_user.role == "patient":
         if not payload.doctor_id:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Field 'doctor_id' is required when initiated by a patient.",
             )
         other_id = payload.doctor_id
     elif current_user.role == "doctor":
         if not payload.patient_id:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Field 'patient_id' is required when initiated by a clinician.",
             )
         other_id = payload.patient_id
     elif current_user.role == "admin_operator":
         if not payload.patient_id or not payload.doctor_id:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Admin must specify both 'patient_id' and 'doctor_id'.",
             )
         other_id = f"{payload.patient_id}:{payload.doctor_id}"
@@ -140,7 +140,7 @@ def create_or_get_conversation(
     except PermissionDeniedError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc))
 
     p_name = f"{conv.patient.first_name} {conv.patient.last_name}" if conv.patient else f"Patient {conv.patient_id}"
     d_name = f"Dr. {conv.doctor.first_name} {conv.doctor.last_name}" if conv.doctor else f"Dr. {conv.doctor_id}"
@@ -297,7 +297,7 @@ def send_message(
     except EntityConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc))
 
     return MessageResponse(
         message_id=msg.message_id,
@@ -349,3 +349,87 @@ def mark_messages_read(
         messages_marked_read=count,
         read_at=read_time,
     )
+
+
+@router.get(
+    "/messages",
+    response_model=List[MessageResponse],
+    status_code=status.HTTP_200_OK,
+    summary="List messages by patient query parameter (Compatibility Route)",
+)
+def list_messages_compat(
+    patient_id: Optional[str] = Query(None, description="Patient ID to query messages for"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> List[MessageResponse]:
+    """Compatibility route: list messages for patient conversation."""
+    if not patient_id:
+        return []
+    service = MessagingService(db)
+    try:
+        conv, _ = service.get_or_create_conversation(current_user=current_user, other_id=patient_id)
+        messages, _ = service.list_messages(
+            current_user=current_user,
+            conversation_id=conv.conversation_id,
+            page=1,
+            page_size=100,
+            order="asc",
+        )
+        return [
+            MessageResponse(
+                message_id=m.message_id,
+                conversation_id=m.conversation_id,
+                sender_id=m.sender_id,
+                receiver_id=m.receiver_id,
+                patient_context_id=m.patient_context_id,
+                content=m.content,
+                is_read=m.is_read,
+                idempotency_key=m.idempotency_key,
+                created_at=m.created_at,
+                read_at=m.read_at,
+            )
+            for m in messages
+        ]
+    except Exception:
+        return []
+
+
+@router.post(
+    "/messages",
+    response_model=MessageResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Send message by receiver_id or patient_id (Compatibility Route)",
+)
+def send_message_compat(
+    payload: Dict[str, Any] = Body(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    """Compatibility route: send consultation message by patient_id or receiver_id."""
+    target_patient_id = payload.get("patient_id") or payload.get("receiver_id")
+    content = payload.get("content") or payload.get("text") or payload.get("message")
+    if not target_patient_id or not content:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Fields 'patient_id' (or 'receiver_id') and 'content' are required.",
+        )
+    service = MessagingService(db)
+    conv, _ = service.get_or_create_conversation(current_user=current_user, other_id=str(target_patient_id))
+    msg, _ = service.send_message(
+        current_user=current_user,
+        conversation_id=conv.conversation_id,
+        content=str(content),
+    )
+    return MessageResponse(
+        message_id=msg.message_id,
+        conversation_id=msg.conversation_id,
+        sender_id=msg.sender_id,
+        receiver_id=msg.receiver_id,
+        patient_context_id=msg.patient_context_id,
+        content=msg.content,
+        is_read=msg.is_read,
+        idempotency_key=msg.idempotency_key,
+        created_at=msg.created_at,
+        read_at=msg.read_at,
+    )
+

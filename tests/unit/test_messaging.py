@@ -379,7 +379,7 @@ def test_empty_and_whitespace_only_messages_rejected(client: TestClient, test_da
         headers={"Authorization": f"Bearer {test_data['alice_token']}"},
         json={"content": ""},
     )
-    assert r1.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert r1.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     # Whitespace only
     r2 = client.post(
@@ -387,7 +387,7 @@ def test_empty_and_whitespace_only_messages_rejected(client: TestClient, test_da
         headers={"Authorization": f"Bearer {test_data['alice_token']}"},
         json={"content": "   \n\t  "},
     )
-    assert r2.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert r2.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_oversized_message_rejected(client: TestClient, test_data: dict):
@@ -399,7 +399,7 @@ def test_oversized_message_rejected(client: TestClient, test_data: dict):
         headers={"Authorization": f"Bearer {test_data['alice_token']}"},
         json={"content": "A" * 2001},
     )
-    assert r.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert r.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_message_idempotency_retry_handling(client: TestClient, test_data: dict):

@@ -1,0 +1,217 @@
+.chartContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-xs);
+}
+
+.chartHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.chartTitleCol {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chartTitle {
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.chartMetaText {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.chartControls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.chartSvgWrapper {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background-color: var(--color-bg-surface-subtle);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xs);
+}
+
+.svgElement {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 280px;
+}
+
+/* Grid & Axes */
+.gridLine {
+  stroke: var(--color-border-subtle);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.axisLine {
+  stroke: var(--color-border-base);
+  stroke-width: 1.5;
+}
+
+.axisTickText {
+  font-size: 11px;
+  fill: var(--color-text-muted);
+  font-family: var(--font-mono);
+}
+
+.axisTickTextX {
+  text-anchor: middle;
+}
+
+.axisTickTextY {
+  text-anchor: end;
+}
+
+/* Data Series */
+.dataLine {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 2.25;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.dataArea {
+  fill: url(#chartGradient);
+  opacity: 0.15;
+}
+
+.dataPoint {
+  fill: var(--color-primary);
+  stroke: #ffffff;
+  stroke-width: 2;
+  cursor: pointer;
+  transition: r var(--transition-fast), fill var(--transition-fast);
+}
+
+.dataPoint:hover,
+.dataPoint:focus-visible {
+  r: 6;
+  fill: var(--color-primary-hover);
+  outline: none;
+}
+
+.activePoint {
+  r: 6.5;
+  fill: var(--color-primary-active);
+  stroke: #ffffff;
+  stroke-width: 2.5;
+}
+
+/* Floating Tooltip */
+.tooltipOverlay {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background-color: var(--color-nav-bg);
+  border: 1px solid var(--color-nav-border);
+  border-radius: var(--radius-xs);
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-nav-text-primary);
+  font-size: var(--text-xs);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  pointer-events: none;
+  box-shadow: var(--shadow-md);
+  z-index: 10;
+}
+
+.tooltipValueRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.tooltipValue {
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  font-family: var(--font-mono);
+  color: #38bdf8;
+}
+
+.tooltipTimestamp {
+  font-size: var(--text-2xs);
+  color: var(--color-nav-text-secondary);
+  font-family: var(--font-mono);
+}
+
+.tooltipProvenance {
+  font-size: var(--text-2xs);
+  color: #fbbf24;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: var(--weight-semibold);
+}
+
+/* Accessible Data Table */
+.accessibleTableToggleBtn {
+  font-size: var(--text-xs);
+  color: var(--color-primary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-align: left;
+}
+
+.accessibleTableToggleBtn:hover {
+  color: var(--color-primary-hover);
+}
+
+.accessibleTableWrapper {
+  overflow-x: auto;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xs);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-xs);
+  text-align: left;
+}
+
+.dataTable th {
+  background-color: var(--color-bg-surface-subtle);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border-base);
+  color: var(--color-text-secondary);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+}
+
+.dataTable td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+}

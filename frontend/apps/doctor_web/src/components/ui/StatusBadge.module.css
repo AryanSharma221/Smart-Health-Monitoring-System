@@ -1,0 +1,152 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  line-height: var(--leading-none);
+  white-space: nowrap;
+}
+
+.indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Freshness States */
+.fresh {
+  background-color: var(--color-fresh-bg);
+  color: var(--color-fresh-base);
+  border-color: var(--color-success-border);
+}
+.fresh .indicator {
+  background-color: var(--color-fresh-base);
+}
+
+.stale {
+  background-color: var(--color-stale-bg);
+  color: var(--color-stale-base);
+  border-color: var(--color-stale-border);
+}
+.stale .indicator {
+  background-color: var(--color-stale-base);
+}
+
+.unavailable {
+  background-color: var(--color-unavailable-bg);
+  color: var(--color-unavailable-base);
+  border-color: var(--color-border-base);
+}
+.unavailable .indicator {
+  background-color: var(--color-unavailable-base);
+}
+
+.disconnected {
+  background-color: var(--color-disconnected-bg);
+  color: var(--color-disconnected-base);
+  border-color: var(--color-disconnected-border);
+}
+.disconnected .indicator {
+  background-color: var(--color-disconnected-base);
+}
+
+/* Alert Workflow Statuses */
+.open {
+  background-color: var(--color-error-bg);
+  color: var(--color-error-base);
+  border-color: var(--color-error-border);
+}
+.open .indicator {
+  background-color: var(--color-error-base);
+}
+
+.acknowledged {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-base);
+  border-color: var(--color-warning-border);
+}
+.acknowledged .indicator {
+  background-color: var(--color-warning-base);
+}
+
+.resolved {
+  background-color: var(--color-success-bg);
+  color: var(--color-success-base);
+  border-color: var(--color-success-border);
+}
+.resolved .indicator {
+  background-color: var(--color-success-base);
+}
+
+/* ML Anomaly Assessment Outputs */
+.normal_like {
+  background-color: var(--color-success-bg);
+  color: var(--color-success-base);
+  border-color: var(--color-success-border);
+}
+.normal_like .indicator {
+  background-color: var(--color-success-base);
+}
+
+.anomalous {
+  background-color: var(--color-error-bg);
+  color: var(--color-error-base);
+  border-color: var(--color-error-border);
+}
+.anomalous .indicator {
+  background-color: var(--color-error-base);
+}
+
+.insufficient_data {
+  background-color: var(--color-unavailable-bg);
+  color: var(--color-unavailable-base);
+  border-color: var(--color-border-base);
+}
+.insufficient_data .indicator {
+  background-color: var(--color-unavailable-base);
+}
+
+/* General Severity Variants */
+.critical {
+  background-color: var(--color-error-bg);
+  color: var(--color-error-base);
+  border-color: var(--color-error-border);
+}
+.critical .indicator {
+  background-color: var(--color-error-base);
+}
+
+.elevated {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning-base);
+  border-color: var(--color-warning-border);
+}
+.elevated .indicator {
+  background-color: var(--color-warning-base);
+}
+
+.advisory {
+  background-color: var(--color-info-bg);
+  color: var(--color-info-base);
+  border-color: var(--color-info-border);
+}
+.advisory .indicator {
+  background-color: var(--color-info-base);
+}
+
+.info {
+  background-color: var(--color-info-bg);
+  color: var(--color-info-base);
+  border-color: var(--color-info-border);
+}
+.info .indicator {
+  background-color: var(--color-info-base);
+}
+

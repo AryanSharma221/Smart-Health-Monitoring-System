@@ -6,9 +6,9 @@ from __future__ import annotations
 
 import re
 from datetime import date, datetime
-from typing import Optional
+from typing import Any, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class UserRegisterRequest(BaseModel):
@@ -77,12 +77,37 @@ class PatientProfileResponse(BaseModel):
     patient_id: str
     first_name: str
     last_name: str
+    name: Optional[str] = None
+    source_patient_id: Optional[str] = None
     date_of_birth: Optional[date] = None
     gender: Optional[str] = None
     height_cm: Optional[float] = None
     weight_kg: Optional[float] = None
     contact_phone: Optional[str] = None
     emergency_contact: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def populate_patient_display_fields(cls, data: Any) -> Any:
+        if hasattr(data, "first_name") and hasattr(data, "last_name"):
+            fn = getattr(data, "first_name", "") or ""
+            ln = getattr(data, "last_name", "") or ""
+            full = f"{fn} {ln}".strip() or getattr(data, "patient_id", "")
+            data_dict = {
+                "patient_id": data.patient_id,
+                "first_name": fn,
+                "last_name": ln,
+                "name": full,
+                "source_patient_id": data.patient_id,
+                "date_of_birth": getattr(data, "date_of_birth", None),
+                "gender": getattr(data, "gender", None),
+                "height_cm": getattr(data, "height_cm", None),
+                "weight_kg": getattr(data, "weight_kg", None),
+                "contact_phone": getattr(data, "contact_phone", None),
+                "emergency_contact": getattr(data, "emergency_contact", None),
+            }
+            return data_dict
+        return data
 
 
 class DoctorProfileResponse(BaseModel):
@@ -110,3 +135,38 @@ class UserProfileResponse(BaseModel):
     created_at: datetime
     patient_profile: Optional[PatientProfileResponse] = None
     doctor_profile: Optional[DoctorProfileResponse] = None
+    name: Optional[str] = None
+    license_number: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def populate_display_fields(cls, data: Any) -> Any:
+        if hasattr(data, "doctor_profile") and getattr(data, "doctor_profile", None):
+            doc = data.doctor_profile
+            data_dict = {
+                "user_id": data.user_id,
+                "email": data.email,
+                "role": data.role,
+                "is_active": data.is_active,
+                "created_at": data.created_at,
+                "patient_profile": getattr(data, "patient_profile", None),
+                "doctor_profile": doc,
+                "name": f"Dr. {doc.first_name} {doc.last_name}",
+                "license_number": doc.license_number,
+            }
+            return data_dict
+        elif hasattr(data, "patient_profile") and getattr(data, "patient_profile", None):
+            pat = data.patient_profile
+            data_dict = {
+                "user_id": data.user_id,
+                "email": data.email,
+                "role": data.role,
+                "is_active": data.is_active,
+                "created_at": data.created_at,
+                "patient_profile": pat,
+                "doctor_profile": getattr(data, "doctor_profile", None),
+                "name": f"{pat.first_name} {pat.last_name}",
+                "license_number": None,
+            }
+            return data_dict
+        return data

@@ -501,7 +501,7 @@ def test_pagination_respects_page_size_limits(client: TestClient, test_db_sessio
         "/api/v1/patients/P101/readings?page=1&page_size=101",
         headers={"Authorization": f"Bearer {data['p1_token']}"},
     )
-    assert resp_oversize.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert resp_oversize.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_ordering_is_deterministic_when_timestamps_match(client: TestClient, test_db_session: Session, test_settings: Settings):

@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "project_name": "AI-Powered Smart Health Monitoring System",
+  "release_version": "3.0.0",
+  "release_date": "2026-10-14",
+  "audit_status": "READY_WITH_DISCLOSED_LIMITATIONS",
+  "repositories": [
+    {
+      "component": "Central Application Gateway & Database Core",
+      "authoritative_source": "https://github.com/AryanSharma221/smart-health-monitoring",
+      "local_workspace": "smart-health-monitoring",
+      "branch": "main",
+      "commit_hash": "af3517887ff921a7f92de21c88d4022bed449d83",
+      "status": "VERIFIED_COMPLETE",
+      "runtime": "Python 3.12.4 / 3.12.9",
+      "manifest": "requirements.txt",
+      "test_command": "python -m pytest",
+      "test_result": "280 passed in 69.02s (100% pass rate)"
+    },
+    {
+      "component": "Clinician Web Workstation (doctor_web)",
+      "authoritative_source": "https://github.com/AdityaDhakad1404/frontend-dbms",
+      "local_workspace": "AdityaDhakad1404-frontend-dbms/apps/doctor_web",
+      "branch": "main",
+      "commit_hash": "2c2d6a7a88d9f5f9b3fdd482f4878b8f3f508206",
+      "status": "VERIFIED_COMPLETE",
+      "runtime": "Node.js v24.14.0, npm 11.9.0",
+      "manifest": "package.json",
+      "test_command": "npm.cmd test",
+      "test_result": "20 passed in 211ms (100% pass rate)",
+      "build_command": "npm.cmd run build",
+      "build_result": "Clean build in 275ms (0 errors)"
+    },
+    {
+      "component": "Machine Learning Anomaly Engine (health_analysis)",
+      "authoritative_source": "https://github.com/HarnoorKant/Smart-Health-Monitoring-System",
+      "local_workspace": "HarnoorKant-Smart-Health-Monitoring-System",
+      "branch": "main",
+      "commit_hash": "aa6410df29113c7ba618ee9506fc1113ec879e96",
+      "status": "VERIFIED_COMPLETE",
+      "runtime": "Python 3.12.4, scikit-learn 1.8.0, joblib 1.5.3",
+      "manifest": "pyproject.toml",
+      "artifact_path": "models/iforest_v1/model.joblib",
+      "artifact_size_bytes": 1149449,
+      "test_result": "Verified through unit/integration tests and live inference"
+    }
+  ],
+  "verification_scorecard": {
+    "backend_pytest_tests": 280,
+    "backend_pytest_passed": 280,
+    "frontend_node_tests": 20,
+    "frontend_node_passed": 20,
+    "live_e2e_checks": 31,
+    "live_e2e_passed": 31,
+    "benchmark_workloads": 7,
+    "benchmark_equivalence_passed": 7,
+    "total_verification_points": 338,
+    "overall_pass_rate_percentage": 100.0
+  },
+  "required_environment_variables": [
+    "MYSQL_HOST",
+    "MYSQL_PORT",
+    "MYSQL_DATABASE",
+    "MYSQL_USER",
+    "MYSQL_PASSWORD",
+    "MONGODB_URI",
+    "MONGODB_DATABASE",
+    "JWT_SECRET",
+    "JWT_ALGORITHM",
+    "ACCESS_TOKEN_EXPIRE_MINUTES"
+  ],
+  "verified_disk_artifacts": [
+    "database/mysql/schema.sql",
+    "benchmarks/results/bench_1791921481.json",
+    "benchmarks/results/bench_1791921481_samples.csv",
+    "benchmarks/results/bench_1791921481_summary.md",
+    "HarnoorKant-Smart-Health-Monitoring-System/models/iforest_v1/model.joblib",
+    "HarnoorKant-Smart-Health-Monitoring-System/models/iforest_v1/metadata.json",
+    "docs/submission/presentation_slide_deck.md"
+  ],
+  "disclosed_scope_limitations": [
+    {
+      "component": "Patient Mobile Application (Flutter)",
+      "status": "PLANNED_EXTERNAL_SCOPE",
+      "description": "Native mobile client code is not packaged in the local workspace. Ingestion flows are verified via bulk Kaggle CSV replay and REST APIs."
+    },
+    {
+      "component": "Stateless JWT Revocation",
+      "status": "DOCUMENTED_OPERATIONAL_BOUNDARY",
+      "description": "Logouts record audit logs in MySQL audit_logs and purge client tokens; external Redis blacklist recommended for instant revocation in production."
+    },
+    {
+      "component": "Cold-Start ML Windowing",
+      "status": "DOCUMENTED_ALGORITHMIC_BOUNDARY",
+      "description": "Patients with fewer than 10 historical telemetry readings fall back to cohort baselines rather than rolling window features."
+    }
+  ]
+}

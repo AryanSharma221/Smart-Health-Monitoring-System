@@ -1,0 +1,487 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.headerSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.headerTopRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.headerTitleCol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.title {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+  line-height: var(--leading-tight);
+}
+
+.subtitle {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: var(--leading-normal);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.refreshMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.lastRefreshedLabel {
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+}
+
+.lastRefreshedValue {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+}
+
+.refreshBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.spinIcon {
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Fixture Alert Notice */
+.fixtureNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-left: 4px solid var(--color-primary);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-xs);
+  color: #1e3a8a;
+}
+
+.fixtureText {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.fixtureTag {
+  display: inline-flex;
+  padding: 1px 6px;
+  background-color: var(--color-primary);
+  color: #ffffff;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  border-radius: var(--radius-xs);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Two-Pane Chat Workbench */
+.chatWorkbench {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: var(--space-4);
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-xs);
+  box-shadow: var(--shadow-sm);
+  min-height: 600px;
+  overflow: hidden;
+}
+
+@media (max-width: 860px) {
+  .chatWorkbench {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Left Pane: Conversations / Assigned Patients */
+.leftPane {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--color-border-subtle);
+  background-color: var(--color-bg-surface-subtle);
+  overflow: hidden;
+}
+
+.searchBoxArea {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background-color: var(--color-bg-surface);
+}
+
+.searchInputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: var(--space-3);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.patientSearchInput {
+  width: 100%;
+  height: 36px;
+  padding: 0 var(--space-3) 0 calc(var(--space-3) + 20px);
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-xs);
+  transition: border-color var(--transition-fast);
+}
+
+.patientSearchInput:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.conversationList {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.conversationItem {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  background-color: var(--color-bg-surface-subtle);
+  transition: background-color var(--transition-fast);
+  text-align: left;
+  border-left: 3px solid transparent;
+}
+
+.conversationItem:hover {
+  background-color: var(--color-bg-surface);
+}
+
+.conversationItemSelected {
+  background-color: #f0f9ff !important;
+  border-left: 3px solid var(--color-primary) !important;
+}
+
+.conversationItemTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.patientName {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.monoTag {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+}
+
+.snippetRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.snippetText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
+.snippetTime {
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+/* Right Pane: Conversation Thread & Composer */
+.rightPane {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg-surface);
+  position: relative;
+  overflow: hidden;
+}
+
+.threadHeader {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border-base);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  background-color: var(--color-bg-surface);
+}
+
+.threadHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.mobileBackBtn {
+  display: none;
+  padding: 4px 8px;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  background-color: var(--color-bg-surface-subtle);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+}
+
+@media (max-width: 860px) {
+  .mobileBackBtn {
+    display: inline-flex;
+  }
+}
+
+.threadRecipientName {
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.threadHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.vitalsLink {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.vitalsLink:hover {
+  text-decoration: underline;
+}
+
+/* Messages Stream */
+.messagesScroll {
+  flex: 1;
+  padding: var(--space-4);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  background-color: var(--color-bg-surface-subtle);
+  min-height: 380px;
+  max-height: 520px;
+}
+
+.messageRow {
+  display: flex;
+  width: 100%;
+}
+
+.messageRowDoctor {
+  justify-content: flex-end;
+}
+
+.messageRowPatient {
+  justify-content: flex-start;
+}
+
+.messageBubble {
+  max-width: 78%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-xs);
+  box-shadow: var(--shadow-sm);
+  word-break: break-word;
+}
+
+.doctorBubble {
+  background-color: var(--color-nav-bg);
+  color: #ffffff;
+  border-bottom-right-radius: 0;
+}
+
+.patientBubble {
+  background-color: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-base);
+  border-bottom-left-radius: 0;
+}
+
+.messageSender {
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.doctorBubble .messageSender {
+  color: #38bdf8;
+}
+
+.patientBubble .messageSender {
+  color: var(--color-primary);
+}
+
+.messageContent {
+  line-height: var(--leading-relaxed);
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.messageFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  font-size: var(--text-2xs);
+  font-family: var(--font-mono);
+}
+
+.doctorBubble .messageFooter {
+  color: #94a3b8;
+}
+
+.patientBubble .messageFooter {
+  color: var(--color-text-muted);
+}
+
+/* Composer Area */
+.composerArea {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border-base);
+  background-color: var(--color-bg-surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.composerLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.composerTextarea {
+  width: 100%;
+  padding: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-base);
+  border-radius: var(--radius-xs);
+  resize: vertical;
+  min-height: 64px;
+  font-family: inherit;
+  line-height: var(--leading-normal);
+}
+
+.composerTextarea:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.composerBottomRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.charCount {
+  font-size: var(--text-2xs);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+}
+
+.charCountExceeded {
+  color: var(--color-error-base);
+  font-weight: var(--weight-bold);
+}
+
+.sendBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.feedbackBanner {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-xs);
+}
+
+.feedbackSuccess {
+  background-color: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
+  color: var(--color-success-base);
+}
+
+.feedbackError {
+  background-color: var(--color-error-bg);
+  border: 1px solid var(--color-border-base);
+  color: var(--color-error-base);
+}

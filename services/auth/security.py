@@ -105,6 +105,8 @@ def create_access_token(
     now_utc = datetime.now(timezone.utc)
 
     if expires_delta:
+        if isinstance(expires_delta, (int, float)):
+            expires_delta = timedelta(seconds=expires_delta)
         expire = now_utc + expires_delta
     else:
         expire = now_utc + timedelta(minutes=cfg.access_token_expire_minutes)

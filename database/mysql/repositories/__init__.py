@@ -1,6 +1,7 @@
 """Repository package root."""
 from database.mysql.repositories.alert_repository import AlertRepository
 from database.mysql.repositories.analytics_repository import SqlAnalyticsRepository
+from database.mysql.repositories.assessment_repository import AssessmentRepository
 from database.mysql.repositories.audit_repository import AuditRepository
 from database.mysql.repositories.patient_repository import PatientRepository
 from database.mysql.repositories.user_repository import UserRepository
@@ -10,7 +11,9 @@ __all__ = [
     "PatientRepository",
     "VitalsRepository",
     "AlertRepository",
+    "AssessmentRepository",
     "AuditRepository",
     "UserRepository",
     "SqlAnalyticsRepository",
 ]
+

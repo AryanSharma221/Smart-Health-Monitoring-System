@@ -300,6 +300,36 @@ class Settings(BaseSettings):
         """
         return Path(self.kaggle_dataset_path).resolve()
 
+    def resolve_model_artifact_dir(self) -> Path:
+        """
+        Locate the Isolation Forest model artifact directory.
+        Checks configured directory, environment variable, sibling ML repo, and local path.
+        """
+        import os
+
+        env_dir = os.environ.get("MODEL_ARTIFACT_DIR") or os.environ.get("ML_MODEL_DIR")
+        if env_dir:
+            p = Path(env_dir).resolve()
+            if p.exists():
+                return p
+
+        configured = Path(self.model_artifact_dir).resolve()
+        if configured.exists() and (configured / "model.joblib").exists():
+            return configured
+
+        candidates = [
+            Path(__file__).resolve().parent.parent.parent.parent / "HarnoorKant-Smart-Health-Monitoring-System" / "models" / "iforest_v1",
+            Path(__file__).resolve().parent.parent.parent / "models" / "iforest_v1",
+            Path("models/iforest_v1").resolve(),
+            Path("packages/health_analysis/artifacts").resolve(),
+        ]
+        for candidate in candidates:
+            if candidate.exists() and (candidate / "model.joblib").exists():
+                return candidate.resolve()
+
+        return configured
+
+
     def __repr__(self) -> str:
         """Sanitized string representation masking all secrets."""
         safe_db_url = self.get_safe_mysql_url()

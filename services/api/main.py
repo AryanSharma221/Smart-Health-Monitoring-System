@@ -21,14 +21,19 @@ from database.mongodb.client import (
     close_mongo_client,
     sanitize_mongo_uri,
 )
+from database.mysql.models import User
 from database.mysql.repositories.outbox_repository import OutboxRepository
 from database.mysql.session import check_db_connectivity, dispose_engine, get_db
 from services.api.config import Settings, get_settings
+from services.auth.dependencies import get_current_user
+from services.auth.schemas import UserProfileResponse
 from services.api.routes.alerts import router as alerts_router
 from services.api.routes.auth import router as auth_router
 from services.api.routes.conversations import router as conversations_router
+from services.api.routes.predictions import router as predictions_router
 from services.api.routes.readings import router as readings_router
 from services.api.routes.websocket import router as ws_router
+from services.ml_service import get_ml_service
 from services.websocket.manager import connection_manager
 
 logger = logging.getLogger(__name__)
@@ -38,6 +43,18 @@ logger = logging.getLogger(__name__)
 async def app_lifespan(app: FastAPI):
     """Application lifespan context manager managing startup and resource disposal."""
     logger.info("Initializing Smart Health Monitoring System API Gateway")
+    
+    # Initialize ML service once during startup (loads IsolationForest and frozen baselines)
+    try:
+        settings = getattr(app.state, "settings", None) or get_settings()
+        ml_service = get_ml_service(settings)
+        if ml_service.is_available:
+            logger.info("ML Anomaly Detection service ready (IsolationForest v%s)", ml_service.model_version)
+        else:
+            logger.warning("ML Anomaly Detection service degraded: %s", ml_service.degraded_reason)
+    except Exception as exc:
+        logger.warning("ML service initialization encountered non-fatal error: %s", exc)
+
     yield
     logger.info("Shutting down API Gateway: releasing resources")
     await connection_manager.close_all()
@@ -170,6 +187,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "outbox_queue": stats,
         }
 
+    @app.get("/me", response_model=UserProfileResponse, tags=["Authentication & Identity"])
+    @app.get(f"{app_settings.api_v1_prefix}/me", response_model=UserProfileResponse, tags=["Authentication & Identity"])
+    def get_me_direct(current_user: User = Depends(get_current_user)) -> User:
+        """Alias for /auth/me to support direct root and versioned identity profile queries."""
+        return current_user
+
     # Mount Authentication and Identity Routers (both /api/v1/auth and /auth)
     app.include_router(auth_router, prefix=app_settings.api_v1_prefix)
     app.include_router(auth_router)
@@ -189,6 +212,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Mount Real-Time WebSockets Router (both /api/v1 and root)
     app.include_router(ws_router, prefix=app_settings.api_v1_prefix)
     app.include_router(ws_router)
+
+    # Mount Machine Learning Predictions and Assessments Router (both /api/v1 and root)
+    app.include_router(predictions_router, prefix=app_settings.api_v1_prefix)
+    app.include_router(predictions_router)
 
     return app
 

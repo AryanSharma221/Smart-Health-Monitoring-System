@@ -106,3 +106,15 @@ docker build -t smart-health-api:3.0.0 -f Dockerfile .
 - [MongoDB Analytics Mirror](docs/mongodb_analytics_mirror.md): Transactional outbox pattern, collections, and disaster recovery.
 - [Real-Time WebSockets](docs/realtime_websockets.md): WebSocket handshake, connection lifecycle, and authorization.
 - [Clinical Messaging System](docs/messaging_system.md): End-to-end patient-clinician messaging and read tracking.
+
+---
+
+## 6. Academic Coursework Submission & Viva Defense Pack (DA1, DA2, DA3)
+
+The complete academic evidence and defense suite is located in [docs/submission/](docs/submission/):
+- **Technical Presentation Deck:** [docs/submission/presentation_slide_deck.md](docs/submission/presentation_slide_deck.md) (20 slides with speaker notes & examiner Q&A)
+- **Master Viva Voce Guide:** [docs/submission/13_project_presentation_and_viva_guide.md](docs/submission/13_project_presentation_and_viva_guide.md) (Model answers for Database, ML, Backend, and Benchmarks)
+- **DA1–DA3 Traceability Matrix:** [docs/submission/07_da1_da3_traceability_matrix.md](docs/submission/07_da1_da3_traceability_matrix.md) (100% compliance mapping)
+- **Release Manifest & Packaging Guide:** [docs/submission/16_release_manifest_and_packaging_guide.md](docs/submission/16_release_manifest_and_packaging_guide.md)
+- **Machine-Readable Manifest:** [RELEASE_MANIFEST.json](RELEASE_MANIFEST.json) (v3.0.0 release specification)
+

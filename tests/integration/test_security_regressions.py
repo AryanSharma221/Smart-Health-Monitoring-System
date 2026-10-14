@@ -288,7 +288,7 @@ def test_role_escalation_prevention(
         json={"patient_id": "P200"},
         headers=headers_pat_a,
     )
-    assert resp_bad_conv.status_code in (status.HTTP_403_FORBIDDEN, status.HTTP_422_UNPROCESSABLE_ENTITY)
+    assert resp_bad_conv.status_code in (status.HTTP_403_FORBIDDEN, status.HTTP_422_UNPROCESSABLE_CONTENT)
 
     # 3. Patient attempts to register an account with role='doctor' or role='admin_operator'
     resp_reg_doc = security_client.post(
@@ -408,13 +408,13 @@ def test_sql_injection_resilience(
     for sqli in sqli_payloads:
         # In alert severity query
         resp_alerts = security_client.get(f"/api/v1/alerts?severity={sqli}", headers=headers)
-        assert resp_alerts.status_code in (status.HTTP_400_BAD_REQUEST, status.HTTP_422_UNPROCESSABLE_ENTITY, status.HTTP_200_OK)
+        assert resp_alerts.status_code in (status.HTTP_400_BAD_REQUEST, status.HTTP_422_UNPROCESSABLE_CONTENT, status.HTTP_200_OK)
         # Verify users table was not dropped
         assert seeded_users["user_doc_1"] is not None
 
         # In patient_id path
         resp_pat = security_client.get(f"/api/v1/patients/{sqli}/readings", headers=headers)
-        assert resp_pat.status_code in (status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND, status.HTTP_422_UNPROCESSABLE_ENTITY)
+        assert resp_pat.status_code in (status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND, status.HTTP_422_UNPROCESSABLE_CONTENT)
 
 
 # =============================================================================
@@ -435,15 +435,15 @@ def test_pagination_limits_enforced(
 
     # page_size exceeding maximum (1000 > 100)
     resp_huge = security_client.get("/api/v1/patients/P100/readings?page=1&page_size=1000", headers=headers)
-    assert resp_huge.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert resp_huge.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     # negative page
     resp_neg = security_client.get("/api/v1/patients/P100/readings?page=-1&page_size=20", headers=headers)
-    assert resp_neg.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert resp_neg.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     # page = 0
     resp_zero = security_client.get("/api/v1/patients/P100/readings?page=0&page_size=20", headers=headers)
-    assert resp_zero.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert resp_zero.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 # =============================================================================

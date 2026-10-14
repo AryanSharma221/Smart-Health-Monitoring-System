@@ -12,7 +12,7 @@ Provides authenticated, patient-scoped real-time event delivery:
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
 import logging
 from typing import Optional
@@ -23,6 +23,8 @@ from sqlalchemy.orm import Session
 from database.mysql.models import User
 from database.mysql.session import get_db
 from services.api.config import Settings, get_settings
+from services.auth.dependencies import get_current_user
+from services.auth.security import create_access_token
 from services.websocket.auth import (
     authenticate_websocket_token,
     check_subscription_permission,
@@ -36,11 +38,31 @@ router = APIRouter(tags=["Real-Time WebSockets"])
 MAX_MESSAGE_BYTES = 65536  # 64 KB message size cap
 
 
+@router.post(
+    "/ws-ticket",
+    status_code=status.HTTP_200_OK,
+    summary="Issue short-lived WebSocket ticket for authenticated user",
+)
+def issue_ws_ticket(
+    current_user: User = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+) -> dict:
+    """Issue a short-lived authorization ticket for WebSocket connection."""
+    ticket = create_access_token(
+        data={"sub": current_user.user_id, "email": current_user.email, "role": current_user.role},
+        settings=settings,
+        expires_delta=timedelta(seconds=300),
+    )
+    return {"ticket": ticket, "token": ticket}
+
+
 @router.websocket("/ws")
 @router.websocket("/api/v1/ws")
+@router.websocket("/ws/v1/updates")
 async def websocket_endpoint(
     websocket: WebSocket,
     token: Optional[str] = Query(None, description="Bearer JWT access token for connection authentication"),
+    ticket: Optional[str] = Query(None, description="Ticket parameter alias for token authentication"),
     settings: Settings = Depends(get_settings),
     db: Session = Depends(get_db),
 ) -> None:
@@ -48,7 +70,7 @@ async def websocket_endpoint(
     Primary WebSocket gateway for real-time notifications.
     
     Handshake Protocol:
-    1. If token is supplied via query param, validates immediately before accepting socket.
+    1. If token/ticket is supplied via query param, validates immediately before accepting socket.
     2. If token is not in query, accepts connection in unauthenticated state and awaits an
        explicit {"action": "authenticate", "token": "..."} message within 5.0 seconds.
     3. Invalid or expired credentials result in socket closure (code 1008 Policy Violation).
@@ -56,10 +78,11 @@ async def websocket_endpoint(
     5. Clinicians may dynamically subscribe/unsubscribe to assigned patient streams.
     """
     user: Optional[User] = None
+    effective_token = token or ticket
 
     # Path A: Authenticate via query parameter before accepting socket
-    if token:
-        user = authenticate_websocket_token(token, db=db, settings=settings)
+    if effective_token:
+        user = authenticate_websocket_token(effective_token, db=db, settings=settings)
         if user is None:
             logger.warning("Rejecting WebSocket connection: invalid or expired query token.")
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Authentication failed")

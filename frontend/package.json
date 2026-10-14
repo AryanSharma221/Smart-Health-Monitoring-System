@@ -1,0 +1,16 @@
+{
+  "name": "smart-health-monitoring-root",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "apps/doctor_web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/doctor_web",
+    "build": "npm run build --workspace=apps/doctor_web",
+    "typecheck": "npm run typecheck --workspace=apps/doctor_web",
+    "lint": "npm run lint --workspace=apps/doctor_web",
+    "test": "npm run test --workspace=apps/doctor_web",
+    "preview": "npm run preview --workspace=apps/doctor_web"
+  }
+}

@@ -1,0 +1,106 @@
+/* Loading Spinner */
+.spinnerWrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-border-base);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2000ms;
+  }
+}
+
+/* Inline Error */
+.inlineError {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+  border-left: 4px solid var(--color-error-base);
+  border-radius: var(--radius-xs);
+  color: var(--color-error-base);
+  font-size: var(--text-sm);
+}
+
+.errorContent {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.errorIcon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.errorTitle {
+  font-weight: var(--weight-semibold);
+  margin-bottom: 2px;
+}
+
+.errorMessage {
+  font-size: var(--text-xs);
+  color: #7f1d1d;
+  line-height: var(--leading-normal);
+}
+
+/* Empty State */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-10) var(--space-6);
+  background-color: var(--color-bg-surface);
+  border: 1px dashed var(--color-border-base);
+  border-radius: var(--radius-md);
+  margin: var(--space-4) 0;
+  gap: var(--space-3);
+}
+
+.emptyIcon {
+  color: var(--color-text-muted);
+  padding: var(--space-3);
+  background-color: var(--color-bg-surface-subtle);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+}
+
+.emptyTitle {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.emptyDescription {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  max-width: 440px;
+  line-height: var(--leading-relaxed);
+}
+
+.emptyAction {
+  margin-top: var(--space-2);
+}

@@ -231,3 +231,52 @@ def acknowledge_alert(
         )
 
     return updated_alert
+
+
+@router.post(
+    "/alerts/{alert_id}/resolve",
+    response_model=AlertResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Resolve a clinical alert",
+)
+def resolve_alert(
+    alert_id: str = Path(..., min_length=1, max_length=64, description="Unique alert identifier"),
+    payload: Optional[AlertAcknowledgeRequest] = Body(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AlertResponse:
+    """
+    Resolve an active or acknowledged clinical alert.
+    
+    Idempotent behavior:
+    - If alert is in NEW or ACKNOWLEDGED status, updates to RESOLVED, stamps resolved_at and notes,
+      and appends audit log and status history records.
+    - If alert is already RESOLVED, returns existing alert safely without error.
+    """
+    alert_service = AlertService(db)
+    try:
+        alert = alert_service.get_alert(alert_id)
+    except EntityNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Alert '{alert_id}' not found.",
+        )
+
+    # Enforce patient-level authorization
+    verify_patient_access(patient_id=alert.patient_id, current_user=current_user, db=db)
+
+    note = payload.note if payload else None
+    try:
+        updated_alert = alert_service.resolve_alert(
+            alert_id=alert_id,
+            actor_id=current_user.user_id,
+            note=note,
+        )
+    except InvalidStateTransitionError as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(err),
+        )
+
+    return updated_alert
+

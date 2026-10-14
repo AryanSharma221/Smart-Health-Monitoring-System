@@ -277,7 +277,7 @@ def test_validation_error_responses_contract(contract_client: TestClient):
     # Empty JSON body on login
     resp = contract_client.post("/api/v1/auth/login", json={})
     assert resp.status_code in (
-        status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status.HTTP_422_UNPROCESSABLE_CONTENT,
         status.HTTP_400_BAD_REQUEST,
     )
     data = resp.json()
@@ -285,7 +285,7 @@ def test_validation_error_responses_contract(contract_client: TestClient):
 
     # Malformed register payload (missing required password and email)
     resp_bad_reg = contract_client.post("/api/v1/auth/register", json={"first_name": "Test"})
-    assert resp_bad_reg.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert resp_bad_reg.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     assert "detail" in resp_bad_reg.json()
 
 

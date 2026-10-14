@@ -1,0 +1,165 @@
+/**
+ * SMART HEALTH MONITORING SYSTEM — CLINICAL WORKSTATION DESIGN TOKENS
+ * Direction: Restrained, information-dense, high-readability clinical workstation.
+ * Avoids decorative gradients, neon styling, floating cards, or oversized pill buttons.
+ */
+
+:root {
+  /* ==========================================================================
+     1. COLOR SYSTEM — CLINICAL PALETTE
+     ========================================================================== */
+
+  /* Viewport & Canvas Backgrounds */
+  --color-bg-app: #f1f5f9;                /* Slate 100: Muted clinical workbench canvas */
+  --color-bg-surface: #ffffff;            /* Pure white primary workstation cards/panels */
+  --color-bg-surface-subtle: #f8fafc;     /* Slate 50: Secondary table rows / subtle panels */
+  --color-bg-surface-elevated: #ffffff;   /* Elevated modals/dropdowns */
+  --color-bg-hover: #f1f5f9;              /* Interactive item hover */
+  --color-bg-active: #e2e8f0;             /* Interactive item active/pressed */
+
+  /* Navigation & Sidebar Dock (Distinct dark slate workstation chrome) */
+  --color-nav-bg: #0f172a;                /* Slate 900: High-contrast console chrome */
+  --color-nav-bg-subtle: #1e293b;         /* Slate 800: Nav section divide / hover */
+  --color-nav-bg-active: #334155;         /* Slate 700: Active item background */
+  --color-nav-border: #334155;            /* Slate 700: Navigation divider */
+  --color-nav-text-primary: #f8fafc;      /* Crisp high-contrast white text */
+  --color-nav-text-secondary: #94a3b8;    /* Muted label text */
+  --color-nav-text-active: #38bdf8;       /* Clinical cyan accent for active nav item */
+
+  /* Typography / Text Colors */
+  --color-text-primary: #0f172a;          /* Slate 900: Primary high-contrast readability */
+  --color-text-secondary: #334155;        /* Slate 700: Secondary descriptive labels */
+  --color-text-muted: #64748b;            /* Slate 500: Timestamps, units, metadata */
+  --color-text-disabled: #94a3b8;         /* Slate 400: Disabled controls */
+  --color-text-inverse: #ffffff;          /* White text on dark/solid accents */
+
+  /* Borders & Dividers */
+  --color-border-subtle: #e2e8f0;         /* Slate 200: Lightweight item dividers */
+  --color-border-base: #cbd5e1;           /* Slate 300: Standard card & input borders */
+  --color-border-strong: #94a3b8;         /* Slate 400: Emphasized section borders */
+
+  /* Primary Action (Calm Clinical Blue — not neon) */
+  --color-primary: #0284c7;               /* Sky 600: Calm clinical accent */
+  --color-primary-hover: #0369a1;         /* Sky 700: Hover state */
+  --color-primary-active: #075985;        /* Sky 800: Pressed state */
+  --color-primary-subtle: #e0f2fe;        /* Sky 100: Active background pill/tint */
+  --color-primary-contrast: #ffffff;      /* White text on primary */
+
+  /* Clinical Status States: Success / Normal */
+  --color-success-base: #166534;          /* Green 800: Foreground text */
+  --color-success-bg: #f0fdf4;            /* Green 50: Background */
+  --color-success-border: #bbf7d0;        /* Green 200: Border */
+
+  /* Clinical Status States: Warning / Elevated */
+  --color-warning-base: #9a3412;          /* Orange 800: Foreground text */
+  --color-warning-bg: #fff7ed;            /* Orange 50: Background */
+  --color-warning-border: #fed7aa;        /* Orange 200: Border */
+
+  /* Clinical Status States: Error / Critical Alert */
+  --color-error-base: #991b1b;            /* Red 800: Foreground text */
+  --color-error-bg: #fef2f2;              /* Red 50: Background */
+  --color-error-border: #fecaca;          /* Red 200: Border */
+
+  /* Clinical Status States: Info / Operational */
+  --color-info-base: #1e40af;             /* Blue 800: Foreground text */
+  --color-info-bg: #eff6ff;               /* Blue 50: Background */
+  --color-info-border: #bfdbfe;           /* Blue 200: Border */
+
+  /* Telemetry Freshness Statuses */
+  --color-fresh-base: #166534;
+  --color-fresh-bg: #dcfce7;
+  --color-stale-base: #854d0e;            /* Yellow 800 */
+  --color-stale-bg: #fef9c3;            /* Yellow 100 */
+  --color-stale-border: #fde047;
+  --color-unavailable-base: #475569;      /* Slate 600 */
+  --color-unavailable-bg: #f1f5f9;        /* Slate 100 */
+  --color-disconnected-base: #6b21a8;    /* Purple 800 */
+  --color-disconnected-bg: #faf5ff;      /* Purple 50 */
+  --color-disconnected-border: #e9d5ff;
+
+  /* Simulation Warning Banner Tokens (High-visibility, non-medical disclaimer) */
+  --color-banner-sim-bg: #fffbeb;         /* Amber 50 */
+  --color-banner-sim-border: #f59e0b;     /* Amber 500 */
+  --color-banner-sim-text: #78350f;       /* Amber 900 */
+  --color-banner-sim-badge: #d97706;      /* Amber 600 */
+
+  /* ==========================================================================
+     2. TYPOGRAPHY
+     ========================================================================== */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, "Courier New", monospace;
+
+  /* Font Sizes */
+  --text-2xs: 0.6875rem;                  /* 11px: Data table captions, micro badges */
+  --text-xs: 0.75rem;                     /* 12px: Secondary metadata, units */
+  --text-sm: 0.8125rem;                   /* 13px: Standard compact table/panel text */
+  --text-base: 0.875rem;                  /* 14px: Standard body reading text */
+  --text-md: 1rem;                        /* 16px: Form labels, subheadings */
+  --text-lg: 1.125rem;                    /* 18px: Card titles */
+  --text-xl: 1.25rem;                     /* 20px: Section headers */
+  --text-2xl: 1.5rem;                     /* 24px: Workstation view titles */
+  --text-vital-lg: 2rem;                  /* 32px: Real-time numeric vital value display */
+
+  /* Font Weights */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* Line Heights */
+  --leading-none: 1;
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
+  /* ==========================================================================
+     3. SPACING SCALE (Linear 4px baseline)
+     ========================================================================== */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Layout Dimensions */
+  --sidebar-width: 240px;
+  --sidebar-collapsed-width: 64px;
+  --header-height: 52px;
+  --banner-height: 36px;
+
+  /* ==========================================================================
+     4. BORDER RADII (Restrained clinical corners — no bubbly curves)
+     ========================================================================== */
+  --radius-none: 0px;
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 4px;                       /* Default button & card radius */
+  --radius-lg: 6px;                       /* Container panels */
+
+  /* ==========================================================================
+     5. ACCESSIBILITY & FOCUS INDICATORS
+     ========================================================================== */
+  --focus-outline-color: #0284c7;
+  --focus-ring: 0 0 0 2px #ffffff, 0 0 0 4px #0284c7;
+  --focus-ring-inset: inset 0 0 0 2px #0284c7;
+
+  /* ==========================================================================
+     6. SHADOWS & ELEVATION (Subtle, functional elevation)
+     ========================================================================== */
+  --shadow-none: none;
+  --shadow-xs: 0 1px 1px 0 rgba(15, 23, 42, 0.05);
+  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 2px 4px -1px rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.06);
+
+  /* ==========================================================================
+     7. TRANSITIONS & TIMING
+     ========================================================================== */
+  --transition-fast: 100ms ease;
+  --transition-base: 150ms ease-in-out;
+  --transition-smooth: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
