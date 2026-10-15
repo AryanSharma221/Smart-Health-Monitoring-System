@@ -17,6 +17,7 @@ LIVE_ELIGIBLE_SOURCES: Set[str] = {
     "wearable",
     "live_stream",
     "mqtt_telemetry",
+    "self_added",
 }
 
 

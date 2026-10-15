@@ -40,6 +40,7 @@ export interface DashboardPatientRow {
   feedFreshness: FreshnessState;
   mostRecentMeasurementTime: string | null;
   isSimulated?: boolean;
+  isSelfAdded?: boolean;
   provenanceLabel?: string;
 }
 
@@ -189,7 +190,10 @@ export async function fetchPatientRows(useFixtures: boolean): Promise<DashboardP
     const feedFreshness = deriveFeedFreshness(vInfo.vitals, vInfo.error);
     const mostRecentMeasurementTime = resolveLatestMeasurementTime(vInfo.vitals);
     const isSimulated = vInfo.vitals.some((v) => v.isSimulated);
-    const provenanceLabel = isSimulated
+    const isSelfAdded = vInfo.vitals.some((v) => v.source === 'self_added');
+    const provenanceLabel = isSelfAdded
+      ? 'SELF-ADDED (DEMO)'
+      : isSimulated
       ? 'SIMULATED DEMO DATA'
       : (vInfo.vitals.length > 0 ? 'HISTORICAL DATASET' : 'NO TELEMETRY');
 
@@ -203,6 +207,7 @@ export async function fetchPatientRows(useFixtures: boolean): Promise<DashboardP
       feedFreshness,
       mostRecentMeasurementTime,
       isSimulated,
+      isSelfAdded,
       provenanceLabel,
     };
   });
@@ -217,7 +222,12 @@ export function buildFixtureOverviewData(currentUser?: UserSession | null): Dash
     const feedFreshness = deriveFeedFreshness(fix.latestVitals);
     const mostRecentMeasurementTime = resolveLatestMeasurementTime(fix.latestVitals);
     const isSimulated = fix.latestVitals.some((v) => v.isSimulated);
-    const provenanceLabel = isSimulated ? 'SIMULATED DEMO DATA' : 'HISTORICAL DATASET';
+    const isSelfAdded = fix.latestVitals.some((v) => v.source === 'self_added');
+    const provenanceLabel = isSelfAdded
+      ? 'SELF-ADDED (DEMO)'
+      : isSimulated
+      ? 'SIMULATED DEMO DATA'
+      : 'HISTORICAL DATASET';
 
     return {
       patient: fix.patient,
@@ -227,6 +237,7 @@ export function buildFixtureOverviewData(currentUser?: UserSession | null): Dash
       feedFreshness,
       mostRecentMeasurementTime,
       isSimulated,
+      isSelfAdded,
       provenanceLabel,
     };
   });

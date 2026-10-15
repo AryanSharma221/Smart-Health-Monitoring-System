@@ -38,7 +38,14 @@ export const PatientsPage: React.FC = () => {
   const [alertFilter, setAlertFilter] = useState<AlertFilterOption>('all');
 
   const loadData = useCallback(async (useFixtures: boolean) => {
-    return fetchPatientRows(useFixtures);
+    if (useFixtures) {
+      try {
+        return await fetchPatientRows(false);
+      } catch {
+        return fetchPatientRows(true);
+      }
+    }
+    return fetchPatientRows(false);
   }, []);
 
   useEffect(() => {

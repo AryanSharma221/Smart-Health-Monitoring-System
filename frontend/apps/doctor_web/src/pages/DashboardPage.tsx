@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth, useDevMode } from '../hooks';
 import {
   fetchLiveDashboardOverview,
@@ -21,11 +21,24 @@ import {
   AlertTriangleIcon,
 } from '../components/ui';
 import { LiveTelemetryPanel } from '../features/vitals';
+import { DemoSQLWorkbench } from '../features/demo';
 import styles from './DashboardPage.module.css';
 
 export const DashboardPage: React.FC = () => {
   const { currentUser } = useAuth();
   const { isFixtureMode, toggleFixtureMode } = useDevMode();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const activeTab = searchParams.get('tab') === 'workbench' ? 'workbench' : 'telemetry';
+
+  const handleSelectTab = (tab: 'telemetry' | 'workbench') => {
+    if (tab === 'workbench') {
+      setSearchParams({ tab: 'workbench' });
+    } else {
+      setSearchParams({});
+      void handleManualRefresh();
+    }
+  };
 
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -61,7 +74,16 @@ export const DashboardPage: React.FC = () => {
 
   const fetchDashboardData = useCallback(async (useFixtures: boolean) => {
     if (useFixtures) {
-      return buildFixtureOverviewData(currentUser);
+      try {
+        const liveOverview = await fetchLiveDashboardOverview();
+        return {
+          ...liveOverview,
+          isFixtureMode: true,
+        };
+      } catch (err: unknown) {
+        console.warn('Live gateway unavailable in Demo Mode, using isolated fixtures:', err);
+        return buildFixtureOverviewData(currentUser);
+      }
     }
     return fetchLiveDashboardOverview();
   }, [currentUser]);
@@ -284,8 +306,43 @@ export const DashboardPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 4. Patient Monitoring Section */}
-      <section className={styles.sectionCard} aria-label="Assigned Patient Surveillance Feeds">
+      {/* Mode-Aware Navigation Tabs (Exclusively shown in Demo Mode or when Workbench requested) */}
+      {(isFixtureMode || activeTab === 'workbench') && (
+        <div className={styles.demoTabContainer} role="tablist" aria-label="Demo Mode Sections">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'telemetry'}
+            className={`${styles.demoTabBtn} ${activeTab === 'telemetry' ? styles.demoTabBtnActive : ''}`}
+            onClick={() => handleSelectTab('telemetry')}
+          >
+            <span>Assigned Patient Feeds</span>
+            <span className={styles.tabBadgeCohort}>P101–P105 Cohort</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'workbench'}
+            className={`${styles.demoTabBtn} ${activeTab === 'workbench' ? styles.demoTabBtnActive : ''}`}
+            onClick={() => handleSelectTab('workbench')}
+          >
+            <span>Demo SQL Workbench</span>
+            <span className={styles.tabBadgeDemo}>DEMO ONLY</span>
+          </button>
+        </div>
+      )}
+
+      {activeTab === 'workbench' ? (
+        <DemoSQLWorkbench
+          isDemoMode={isFixtureMode}
+          onRefreshHistory={handleManualRefresh}
+          targetPatientId="P101"
+          onSwitchToDemoMode={handleToggleFixtureMode}
+        />
+      ) : (
+        <>
+          {/* 4. Patient Monitoring Section */}
+          <section className={styles.sectionCard} aria-label="Assigned Patient Surveillance Feeds">
         <div className={styles.sectionHeaderRow}>
           <div>
             <h2 className={styles.sectionHeading}>Assigned Patient Feeds</h2>
@@ -407,12 +464,12 @@ export const DashboardPage: React.FC = () => {
                               fontSize: '11px',
                               fontWeight: 700,
                               borderRadius: '4px',
-                              backgroundColor: row.isSimulated ? '#eff6ff' : '#f1f5f9',
-                              color: row.isSimulated ? '#1d4ed8' : '#475569',
-                              border: row.isSimulated ? '1px solid #bfdbfe' : '1px solid #cbd5e1',
+                              backgroundColor: row.isSelfAdded ? '#e0f2fe' : row.isSimulated ? '#eff6ff' : '#f1f5f9',
+                              color: row.isSelfAdded ? '#0369a1' : row.isSimulated ? '#1d4ed8' : '#475569',
+                              border: row.isSelfAdded ? '1px solid #7dd3fc' : row.isSimulated ? '1px solid #bfdbfe' : '1px solid #cbd5e1',
                             }}
                           >
-                            {row.provenanceLabel || (row.isSimulated ? 'SIMULATED DEMO DATA' : 'HISTORICAL DATASET')}
+                            {row.provenanceLabel || (row.isSelfAdded ? 'SELF-ADDED (DEMO)' : row.isSimulated ? 'SIMULATED DEMO DATA' : 'HISTORICAL DATASET')}
                           </span>
                         </td>
 
@@ -469,11 +526,11 @@ export const DashboardPage: React.FC = () => {
                           fontWeight: 700,
                           padding: '1px 6px',
                           borderRadius: '3px',
-                          backgroundColor: row.isSimulated ? '#eff6ff' : '#f1f5f9',
-                          color: row.isSimulated ? '#1d4ed8' : '#475569',
+                          backgroundColor: row.isSelfAdded ? '#e0f2fe' : row.isSimulated ? '#eff6ff' : '#f1f5f9',
+                          color: row.isSelfAdded ? '#0369a1' : row.isSimulated ? '#1d4ed8' : '#475569',
                         }}
                       >
-                        {row.isSimulated ? 'Simulated' : 'Historical'}
+                        {row.isSelfAdded ? 'Self-Added' : row.isSimulated ? 'Simulated' : 'Historical'}
                       </span>
                       <StatusBadge variant={row.feedFreshness} />
                     </div>
@@ -590,6 +647,8 @@ export const DashboardPage: React.FC = () => {
           </div>
         )}
       </section>
+        </>
+      )}
 
       {/* 6. Backend and Live-Update Connection Status Strip */}
       <section className={styles.connectionConsole} aria-label="System Connectivity and Gateway Status">

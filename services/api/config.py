@@ -143,9 +143,9 @@ class Settings(BaseSettings):
         description="JWT cryptographic algorithm",
     )
     access_token_expire_minutes: int = Field(
-        default=60,
+        default=1440,
         ge=1,
-        description="JWT token validity lifetime",
+        description="JWT token validity lifetime (24 hours for evaluation/demonstration sessions)",
     )
     ingestion_api_key: str = Field(
         default="dev_simulator_key",

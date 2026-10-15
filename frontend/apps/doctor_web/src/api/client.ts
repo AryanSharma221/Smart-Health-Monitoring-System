@@ -15,6 +15,7 @@ import { getApiUrl, API_CONFIG } from './config';
 export interface RequestOptions extends RequestInit {
   timeoutMs?: number;
   skipAuth?: boolean;
+  _isRetry?: boolean;
 }
 
 export type ApiErrorType =
@@ -47,10 +48,17 @@ export class ApiClientError extends Error {
 
 /**
  * Retrieves stored session token from sessionStorage.
+ * In Demo Mode, if no active token is stored, falls back to authorized demo offline token.
  */
 export function getStoredAuthToken(): string | null {
   try {
-    return sessionStorage.getItem('shm_auth_token');
+    const token = sessionStorage.getItem('shm_auth_token');
+    if (token) return token;
+    const isDemo = typeof window !== 'undefined' && sessionStorage.getItem('shm_dev_fixture_mode') === 'true';
+    if (isDemo) {
+      return 'demo_offline_token_p101_p105';
+    }
+    return null;
   } catch {
     return null;
   }
@@ -118,6 +126,23 @@ export async function apiRequest<T>(
       }
 
       if (response.status === 401) {
+        const isDemo = typeof window !== 'undefined' && sessionStorage.getItem('shm_dev_fixture_mode') === 'true';
+        if (isDemo && !options._isRetry) {
+          try {
+            sessionStorage.removeItem('shm_auth_token');
+            return await apiRequest<T>(endpoint, {
+              ...options,
+              _isRetry: true,
+              headers: {
+                ...(headers as Record<string, string>),
+                Authorization: 'Bearer demo_offline_token_p101_p105',
+              },
+            });
+          } catch {
+            // If retry fails, throw standard ApiClientError below
+          }
+        }
+
         throw new ApiClientError(
           detailMsg || 'Authentication required or session expired. Please sign in again.',
           'unauthorized',

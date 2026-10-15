@@ -130,6 +130,10 @@ export const LiveTelemetryPanel: React.FC<LiveTelemetryPanelProps> = ({
       ? patientIds[0]
       : selectedPatientId;
 
+  // Active patient object from props
+  const activeRow = patientRows.find((r) => r.patient.patientId === effectivePatientId);
+  const patientName = activeRow?.patient.name || `Patient ${effectivePatientId}`;
+
   // WebSocket status subscription
   useEffect(() => {
     const unsub = wsManager.subscribeStatus((snap) => {
@@ -171,23 +175,7 @@ export const LiveTelemetryPanel: React.FC<LiveTelemetryPanelProps> = ({
       const bounds = resolveTimeBounds(selectedRange);
 
       try {
-        if (isFixtureMode) {
-          const fix = getFixturePatientById(pid);
-          const hrHist = getFixturePatientHistory(pid, 'heart_rate', bounds.from, bounds.to);
-          const spo2Hist = getFixturePatientHistory(pid, 'spo2', bounds.from, bounds.to);
-          const tempHist = getFixturePatientHistory(pid, 'temperature_f', bounds.from, bounds.to);
-
-          if (mountedRef.current) {
-            setLatestVitals(fix ? fix.latestVitals : []);
-            setHistoryReadings([...hrHist, ...spo2Hist, ...tempHist]);
-            setLatestAssessment(null);
-            setLastRefreshedAt(new Date().toISOString());
-            setError(null);
-          }
-          return;
-        }
-
-        // Live API concurrent query
+        // Query live API first (works in both Live Mode and Demo Mode when backend is running)
         const [vitalsRes, historyRes] = await Promise.allSettled([
           getPatientLatestVitals(pid),
           getPatientVitalHistory(pid, {
@@ -199,23 +187,51 @@ export const LiveTelemetryPanel: React.FC<LiveTelemetryPanelProps> = ({
 
         if (!mountedRef.current) return;
 
-        if (vitalsRes.status === 'fulfilled') {
+        let hasLiveVitals = false;
+        if (vitalsRes.status === 'fulfilled' && vitalsRes.value.length > 0) {
           setLatestVitals(vitalsRes.value);
           setError(null);
-        } else {
-          setError(vitalsRes.reason?.message || 'Unable to retrieve latest patient vitals.');
+          hasLiveVitals = true;
+        } else if (vitalsRes.status === 'fulfilled') {
+          setLatestVitals(vitalsRes.value);
+          setError(null);
         }
 
         if (historyRes.status === 'fulfilled') {
           setHistoryReadings(historyRes.value);
+        } else if (isFixtureMode && !hasLiveVitals) {
+          const hrHist = getFixturePatientHistory(pid, 'heart_rate', bounds.from, bounds.to);
+          const spo2Hist = getFixturePatientHistory(pid, 'spo2', bounds.from, bounds.to);
+          const tempHist = getFixturePatientHistory(pid, 'temperature_f', bounds.from, bounds.to);
+          setHistoryReadings([...hrHist, ...spo2Hist, ...tempHist]);
         } else {
-          // Non-fatal if history query failed
           setHistoryReadings([]);
+        }
+
+        if (!hasLiveVitals && isFixtureMode && vitalsRes.status === 'rejected') {
+          const fix = getFixturePatientById(pid);
+          setLatestVitals(fix ? fix.latestVitals : []);
+          const hrHist = getFixturePatientHistory(pid, 'heart_rate', bounds.from, bounds.to);
+          const spo2Hist = getFixturePatientHistory(pid, 'spo2', bounds.from, bounds.to);
+          const tempHist = getFixturePatientHistory(pid, 'temperature_f', bounds.from, bounds.to);
+          setHistoryReadings([...hrHist, ...spo2Hist, ...tempHist]);
+        } else if (vitalsRes.status === 'rejected') {
+          setError(vitalsRes.reason?.message || 'Unable to retrieve latest patient vitals.');
         }
 
         setLastRefreshedAt(new Date().toISOString());
       } catch (err: unknown) {
-        if (mountedRef.current) {
+        if (isFixtureMode && mountedRef.current) {
+          const fix = getFixturePatientById(pid);
+          const hrHist = getFixturePatientHistory(pid, 'heart_rate', bounds.from, bounds.to);
+          const spo2Hist = getFixturePatientHistory(pid, 'spo2', bounds.from, bounds.to);
+          const tempHist = getFixturePatientHistory(pid, 'temperature_f', bounds.from, bounds.to);
+          setLatestVitals(fix ? fix.latestVitals : []);
+          setHistoryReadings([...hrHist, ...spo2Hist, ...tempHist]);
+          setLatestAssessment(null);
+          setLastRefreshedAt(new Date().toISOString());
+          setError(null);
+        } else if (mountedRef.current) {
           const msg = err instanceof Error ? err.message : 'Telemetry request failed.';
           setError(msg);
         }
@@ -230,10 +246,10 @@ export const LiveTelemetryPanel: React.FC<LiveTelemetryPanelProps> = ({
     [effectivePatientId, selectedRange, isFixtureMode]
   );
 
-  // Primary load effect on patient or range change
+  // Primary load effect on patient, range, or activeRow measurement time change
   useEffect(() => {
     void fetchTelemetry(false, true);
-  }, [fetchTelemetry]);
+  }, [fetchTelemetry, activeRow?.mostRecentMeasurementTime]);
 
   // Periodic bounded HTTP polling fallback (every 5 seconds)
   useEffect(() => {
@@ -386,9 +402,7 @@ export const LiveTelemetryPanel: React.FC<LiveTelemetryPanelProps> = ({
     (v) => v.metricCode === 'temperature_f' || v.metricCode === 'temperature_c'
   );
 
-  // Active patient object from props
-  const activeRow = patientRows.find((r) => r.patient.patientId === selectedPatientId);
-  const patientName = activeRow?.patient.name || `Patient ${selectedPatientId}`;
+
 
   // Filter readings by metric for charts
   const hrReadings = historyReadings.filter((r) => r.metricCode === 'heart_rate');
@@ -397,9 +411,12 @@ export const LiveTelemetryPanel: React.FC<LiveTelemetryPanelProps> = ({
     (r) => r.metricCode === 'temperature_f' || r.metricCode === 'temperature_c'
   );
 
-  // Determine overall simulated provenance for display
+  // Determine overall simulated or user-added provenance for display
   const isSimulated = latestVitals.some((v) => v.isSimulated);
-  const provenanceLabel = isSimulated
+  const isSelfAdded = latestVitals.some((v) => v.source === 'self_added');
+  const provenanceLabel = isSelfAdded
+    ? 'SELF-ADDED (DEMO SQL WORKBENCH)'
+    : isSimulated
     ? 'SIMULATED SMARTWATCH'
     : latestVitals.length > 0
     ? 'HISTORICAL KAGGLE DATASET'
@@ -416,11 +433,19 @@ export const LiveTelemetryPanel: React.FC<LiveTelemetryPanelProps> = ({
         <div className={styles.headerTitleCol}>
           <div className={styles.headerTitleRow}>
             <h2 className={styles.title}>Live Smartwatch Telemetry Surveillance</h2>
-            {isSimulated && (
+            {isSelfAdded ? (
+              <span
+                className={styles.simulatedBadge}
+                style={{ backgroundColor: '#e0f2fe', color: '#0369a1', borderColor: '#7dd3fc' }}
+                title="Telemetry inserted via Demo SQL Workbench terminal"
+              >
+                USER ADDED (DEMO)
+              </span>
+            ) : isSimulated ? (
               <span className={styles.simulatedBadge} title="Generated synthetic data for clinical simulation. Not for diagnostic use.">
                 SIMULATED DEMO DATA
               </span>
-            )}
+            ) : null}
           </div>
           <p className={styles.subtitle}>
             Real-time physiologic telemetry streamed from wearable simulator to FastAPI gateway and persistent MySQL store.

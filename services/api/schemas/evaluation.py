@@ -12,7 +12,7 @@ Provides structured request and response contracts for:
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -426,5 +426,43 @@ class ChallengeExecuteResponse(BaseModel):
     response_data: Any
     explanation: str
     timestamp_utc: str
+
+
+# ============================================================================
+# SQL WORKBENCH SCHEMAS (DEMO MODE ONLY)
+# ============================================================================
+
+class MLAssessmentSummary(BaseModel):
+    """Summary of ML anomaly detection inference triggered by vital insert."""
+    assessed: bool = Field(True, description="Whether ML assessment was executed")
+    event_id: Optional[str] = Field(None, description="Ingestion event UUID")
+    patient_id: Optional[str] = Field(None, description="Assessed patient ID")
+    anomaly_score: Optional[float] = Field(None, description="Isolation Forest anomaly score [0.0 - 1.0]")
+    result: Optional[str] = Field(None, description="'normal', 'anomaly', or 'inconclusive'")
+    alert_created: bool = Field(False, description="Whether an alert was triggered")
+    alert_severity: Optional[str] = Field(None, description="Alert severity level: LOW, MEDIUM, HIGH, CRITICAL")
+    message: Optional[str] = Field(None, description="Clinical anomaly explanation")
+
+
+class SQLWorkbenchExecuteRequest(BaseModel):
+    """Payload to execute an arbitrary SQL statement in Demo Mode."""
+    sql: str = Field(..., min_length=1, max_length=5000, description="Single SQL statement to execute")
+    patient_id: Optional[str] = Field(None, description="Optional target patient ID context")
+    params: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Optional query parameter bindings")
+    is_demo_mode: bool = Field(True, description="Must be true to permit execution in Demo Mode")
+
+
+class SQLWorkbenchExecuteResponse(BaseModel):
+    """Structured result returned by the Demo SQL Workbench."""
+    status: str = Field("success", description="'success' or 'error'")
+    statement_type: str = Field(..., description="Detected SQL command: SELECT, INSERT, UPDATE, DELETE, CREATE")
+    execution_time_ms: float = Field(..., description="Query elapsed execution duration in milliseconds")
+    columns: Optional[List[str]] = Field(default=None, description="Ordered column names for tabular results")
+    rows: Optional[List[List[Any]]] = Field(default=None, description="Row values as 2D array")
+    row_count: int = Field(0, description="Total rows returned in the result set")
+    rows_affected: Optional[int] = Field(default=None, description="Number of rows modified, inserted, or deleted")
+    last_inserted_id: Optional[Union[int, str]] = Field(default=None, description="Autoincrement ID of newly inserted record")
+    message: Optional[str] = Field(default=None, description="Informational or operation status message")
+    ml_assessment: Optional[MLAssessmentSummary] = Field(default=None, description="ML assessment result if reading was inserted")
 
 

@@ -100,9 +100,12 @@ from services.api.schemas.evaluation import (
     TestRunnerRunRequest,
     TriggerHistoryResponse,
     TriggerTestUpdateRequest,
+    SQLWorkbenchExecuteRequest,
+    SQLWorkbenchExecuteResponse,
 )
 from services.api.challenges import CHALLENGE_CATALOG, execute_challenge
-from services.auth.dependencies import get_current_user_optional
+from services.auth.dependencies import get_current_user, get_current_user_optional
+from services.demo_sql_service import DemoSQLExecutionService, get_demo_sql_service
 
 logger = logging.getLogger(__name__)
 
@@ -419,6 +422,57 @@ def insert_demo_reading(
         alert_detail=alert_detail,
         outbox_staged=True,
     )
+
+
+# ============================================================================
+# 1B. DEMO SQL WORKBENCH EXECUTION GATEWAY
+# ============================================================================
+
+@router.post(
+    "/workbench/execute",
+    response_model=SQLWorkbenchExecuteResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Execute sandboxed SQL command in Demo Mode Workbench",
+)
+def execute_sql_workbench(
+    payload: SQLWorkbenchExecuteRequest,
+    db: Session = Depends(get_db),
+    sql_service: DemoSQLExecutionService = Depends(get_demo_sql_service),
+    current_user: User = Depends(get_current_user),
+) -> SQLWorkbenchExecuteResponse:
+    """
+    Executes a single validated SQL command against the isolated demo database.
+    
+    Guarantees:
+    - Sandboxed to local demo database.
+    - Multi-statement payloads, administrative statements, and system table access are blocked.
+    - If INSERT targets vitals_readings, validates patient cohort (P101-P105), physiological bounds,
+      enforces source='self_added', and initiates MLService inference.
+    - Zero modification to real-time streams or MongoDB.
+    """
+    if current_user.role not in ("doctor", "admin_operator"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Authorization Violation: Clinician or operator role is required to access Demo SQL Workbench.",
+        )
+
+    response = sql_service.execute_query(payload, db)
+
+    _write_audit(
+        db,
+        action="SQL_WORKBENCH_EXECUTION",
+        entity_id=payload.patient_id or "DEMO_SQL",
+        details={
+            "statement_type": response.statement_type,
+            "rows_affected": response.rows_affected,
+            "row_count": response.row_count,
+            "execution_time_ms": response.execution_time_ms,
+            "has_ml_assessment": response.ml_assessment is not None,
+        },
+        user=current_user,
+    )
+
+    return response
 
 
 # ============================================================================

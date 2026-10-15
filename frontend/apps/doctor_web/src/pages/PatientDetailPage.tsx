@@ -116,52 +116,52 @@ export const PatientDetailPage: React.FC = () => {
       setVitalsError(null);
       setAlertsError(null);
 
-      if (useFixtures) {
-        const fix = getFixturePatientById(pid);
-        if (!fix) {
+      // Query live API concurrently (works in both Live Mode and Demo Mode)
+      try {
+        const patientData = await getPatientById(pid);
+        setPatient(patientData);
+
+        // Concurrently query latest vitals and alerts
+        const [vitalsRes, alertsRes] = await Promise.allSettled([
+          getPatientLatestVitals(pid),
+          getPatientAlerts(pid),
+        ]);
+
+        if (vitalsRes.status === 'fulfilled') {
+          setLatestVitals(vitalsRes.value);
+        } else {
+          setVitalsError(vitalsRes.reason?.message || 'Unable to retrieve latest vitals.');
+          setLatestVitals([]);
+        }
+
+        if (alertsRes.status === 'fulfilled') {
+          setAlerts(alertsRes.value);
+        } else {
+          setAlertsError(alertsRes.reason?.message || 'Unable to retrieve active alerts.');
+          setAlerts([]);
+        }
+
+        setLastRefreshed(new Date().toISOString());
+        return;
+      } catch (err: unknown) {
+        if (useFixtures) {
+          const fix = getFixturePatientById(pid);
+          if (fix) {
+            setPatient(fix.patient);
+            setLatestVitals(fix.latestVitals);
+            setAlerts(fix.alerts);
+            setLastRefreshed(new Date().toISOString());
+            return;
+          }
           setPatient(null);
           setPatientError(`Patient with ID "${pid}" does not exist in development fixtures.`);
           return;
         }
-        setPatient(fix.patient);
-        setLatestVitals(fix.latestVitals);
-        setAlerts(fix.alerts);
-        setLastRefreshed(new Date().toISOString());
-        return;
-      }
 
-      // Query live API concurrently
-      try {
-        const patientData = await getPatientById(pid);
-        setPatient(patientData);
-      } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Unable to query patient profile.';
         setPatient(null);
         setPatientError(msg);
-        return; // If patient identity failed, abort secondary vitals
       }
-
-      // Concurrently query latest vitals and alerts
-      const [vitalsRes, alertsRes] = await Promise.allSettled([
-        getPatientLatestVitals(pid),
-        getPatientAlerts(pid),
-      ]);
-
-      if (vitalsRes.status === 'fulfilled') {
-        setLatestVitals(vitalsRes.value);
-      } else {
-        setVitalsError(vitalsRes.reason?.message || 'Unable to retrieve latest vitals.');
-        setLatestVitals([]);
-      }
-
-      if (alertsRes.status === 'fulfilled') {
-        setAlerts(alertsRes.value);
-      } else {
-        setAlertsError(alertsRes.reason?.message || 'Unable to retrieve active alerts.');
-        setAlerts([]);
-      }
-
-      setLastRefreshed(new Date().toISOString());
     },
     []
   );
@@ -173,13 +173,6 @@ export const PatientDetailPage: React.FC = () => {
       setHistoryError(null);
       const bounds = getTimeRangeBounds(range);
 
-      if (useFixtures) {
-        const hist = getFixturePatientHistory(pid, metric as any, bounds.from, bounds.to);
-        setHistoryReadings(hist);
-        setHistoryLoading(false);
-        return;
-      }
-
       try {
         const hist = await getPatientVitalHistory(pid, {
           metricCode: metric,
@@ -189,6 +182,11 @@ export const PatientDetailPage: React.FC = () => {
         });
         setHistoryReadings(hist);
       } catch (err: unknown) {
+        if (useFixtures) {
+          const hist = getFixturePatientHistory(pid, metric as any, bounds.from, bounds.to);
+          setHistoryReadings(hist);
+          return;
+        }
         const msg = err instanceof Error ? err.message : 'Failed to retrieve vital-sign history.';
         setHistoryError(msg);
         setHistoryReadings([]);
@@ -213,21 +211,21 @@ export const PatientDetailPage: React.FC = () => {
 
   // Real-time WebSocket event listener + 5s polling fallback for active streams
   useEffect(() => {
-    if (isFixtureMode || !patientId) return;
+    if (!patientId) return;
 
-    const unsub = wsManager.subscribeEvents((event) => {
+    const unsub = !isFixtureMode ? wsManager.subscribeEvents((event) => {
       const evtPatient = (event.payload as any)?.patient_id || event.payload;
       if (!evtPatient || evtPatient === patientId) {
-        void loadPatientOverview(patientId, false);
-        void loadHistoryData(patientId, selectedMetric, selectedRange, false);
+        void loadPatientOverview(patientId, isFixtureMode);
+        void loadHistoryData(patientId, selectedMetric, selectedRange, isFixtureMode);
       }
-    });
+    }) : () => {};
 
     let pollTimer: ReturnType<typeof setInterval> | null = null;
-    if (selectedRange === 'live_15m' || selectedRange === '1h' || selectedRange === '24h') {
+    if (selectedRange === 'live_15m' || selectedRange === '1h' || selectedRange === '24h' || isFixtureMode) {
       pollTimer = setInterval(() => {
-        void loadPatientOverview(patientId, false);
-        void loadHistoryData(patientId, selectedMetric, selectedRange, false);
+        void loadPatientOverview(patientId, isFixtureMode);
+        void loadHistoryData(patientId, selectedMetric, selectedRange, isFixtureMode);
       }, 5000);
     }
 
@@ -524,7 +522,9 @@ export const PatientDetailPage: React.FC = () => {
                 </span>
                 <span>
                   Provenance:{' '}
-                  {hrVital?.isSimulated || hrVital?.source === 'smartwatch_simulator' ? (
+                  {hrVital?.source === 'self_added' ? (
+                    <strong style={{ color: '#0369a1' }}>Self-Added (Demo SQL Workbench)</strong>
+                  ) : hrVital?.isSimulated || hrVital?.source === 'smartwatch_simulator' ? (
                     <strong style={{ color: '#d97706' }}>Simulated Smartwatch (Synthetic)</strong>
                   ) : hrVital?.source === 'kaggle_csv' ? (
                     'Kaggle Historical Archive'
@@ -564,7 +564,9 @@ export const PatientDetailPage: React.FC = () => {
                 </span>
                 <span>
                   Provenance:{' '}
-                  {spo2Vital?.isSimulated || spo2Vital?.source === 'smartwatch_simulator' ? (
+                  {spo2Vital?.source === 'self_added' ? (
+                    <strong style={{ color: '#0369a1' }}>Self-Added (Demo SQL Workbench)</strong>
+                  ) : spo2Vital?.isSimulated || spo2Vital?.source === 'smartwatch_simulator' ? (
                     <strong style={{ color: '#d97706' }}>Simulated Smartwatch (Synthetic)</strong>
                   ) : spo2Vital?.source === 'kaggle_csv' ? (
                     'Kaggle Historical Archive'
@@ -604,7 +606,9 @@ export const PatientDetailPage: React.FC = () => {
                 </span>
                 <span>
                   Provenance:{' '}
-                  {tempVital?.isSimulated || tempVital?.source === 'smartwatch_simulator' ? (
+                  {tempVital?.source === 'self_added' ? (
+                    <strong style={{ color: '#0369a1' }}>Self-Added (Demo SQL Workbench)</strong>
+                  ) : tempVital?.isSimulated || tempVital?.source === 'smartwatch_simulator' ? (
                     <strong style={{ color: '#d97706' }}>Simulated Smartwatch (Synthetic)</strong>
                   ) : tempVital?.source === 'kaggle_csv' ? (
                     'Kaggle Historical Archive'

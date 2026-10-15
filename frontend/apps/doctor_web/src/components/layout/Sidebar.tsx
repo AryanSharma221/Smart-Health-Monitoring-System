@@ -1,6 +1,6 @@
 import React from 'react';
-import { NavLink, Link } from 'react-router-dom';
-import { useAuth } from '../../hooks';
+import { NavLink, Link, useLocation } from 'react-router-dom';
+import { useAuth, useDevMode } from '../../hooks';
 import {
   BrandMark,
   OverviewIcon,
@@ -41,6 +41,8 @@ const SECONDARY_NAV: NavItemDef[] = [
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
   const { currentUser, logout } = useAuth();
+  const { isDemoMode } = useDevMode();
+  const location = useLocation();
 
   const handleLinkClick = () => {
     if (onClose) onClose();
@@ -99,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                 to={item.path}
                 onClick={handleLinkClick}
                 className={({ isActive }) =>
-                  isActive
+                  isActive && !(item.path === '/dashboard' && location.search.includes('tab=workbench'))
                     ? `${styles.navItem} ${styles.navItemActive}`
                     : styles.navItem
                 }
@@ -111,6 +113,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
               </NavLink>
             ))}
           </nav>
+
+          {/* Demo Mode Workbench Section (Exclusively rendered when Demo Mode is active) */}
+          {isDemoMode && (
+            <nav className={styles.navSection} aria-label="Demo Mode Utilities">
+              <div className={styles.sectionHeading}>Demo Utilities</div>
+              <NavLink
+                to="/dashboard?tab=workbench"
+                onClick={handleLinkClick}
+                className={
+                  location.pathname === '/dashboard' && location.search.includes('tab=workbench')
+                    ? `${styles.navItem} ${styles.navItemActive}`
+                    : styles.navItem
+                }
+              >
+                <span className={styles.navIcon} aria-hidden="true">
+                  <DatabaseIcon />
+                </span>
+                <span style={{ flex: 1 }}>SQL Workbench</span>
+                <span className={styles.demoNavBadge}>DEMO</span>
+              </NavLink>
+            </nav>
+          )}
 
           {/* Secondary Navigation Section */}
           <nav className={styles.navSection} aria-label="System and Operational Navigation">

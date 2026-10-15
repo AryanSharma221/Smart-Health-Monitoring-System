@@ -56,20 +56,28 @@ export async function fetchAssignedAlerts(
   const { patientId, useFixtures = false } = options;
 
   if (useFixtures) {
-    const alerts = getAllFixtureAlerts(patientId);
-    const patients = KAGGLE_COHORT_FIXTURES.map((f) => f.patient);
-    const patientMap = new Map<string, PatientProfile>();
-    for (const p of patients) {
-      patientMap.set(p.patientId, p);
-    }
+    try {
+      const liveRes = await fetchAssignedAlerts({ patientId, useFixtures: false });
+      return {
+        ...liveRes,
+        isFixtureMode: true,
+      };
+    } catch {
+      const alerts = getAllFixtureAlerts(patientId);
+      const patients = KAGGLE_COHORT_FIXTURES.map((f) => f.patient);
+      const patientMap = new Map<string, PatientProfile>();
+      for (const p of patients) {
+        patientMap.set(p.patientId, p);
+      }
 
-    return {
-      alerts,
-      patients,
-      patientMap,
-      partialErrors: {},
-      isFixtureMode: true,
-    };
+      return {
+        alerts,
+        patients,
+        patientMap,
+        partialErrors: {},
+        isFixtureMode: true,
+      };
+    }
   }
 
   // Live Gateway Mode: Fetch assigned patients first

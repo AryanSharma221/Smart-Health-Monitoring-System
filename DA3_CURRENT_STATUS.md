@@ -54,6 +54,8 @@ Per Task 1 of the Part 7Q audit, the 7 requested DA3 documents were inspected in
 | **21** | `DA3_EVALUATION_DAY_PREFLIGHT.md` | `DA3_EVALUATION_DAY_PREFLIGHT.md` | **EXISTS** | 19,159 bytes<br>2026-10-15 08:35 UTC | Evaluation-day preflight runbook and evidence-based Go/No-Go decision; 5-minute preflight sequence, 24-requirement matrix, build verification, and GO verdict. |
 | **22** | `DA3_DEFECT_CLOSURE_REPORT.md` | `DA3_DEFECT_CLOSURE_REPORT.md` | **EXISTS** | 7,119 bytes<br>2026-10-15 08:42 UTC | Comprehensive defect backlog closure and hardening report for DEF-001 through DEF-005; 100% remediated. |
 | **23** | `DA3_INDEPENDENT_FINAL_AUDIT.md` | `DA3_INDEPENDENT_FINAL_AUDIT.md` | **EXISTS** | 31,060 bytes<br>2026-10-15 08:43 UTC | Master independent final audit, 24-item compliance matrix, physical claim verification, disclosed boundaries, and unequivocal GO decision. |
+| **24** | `DEMO_SQL_WORKBENCH_VERIFICATION.md` | `DEMO_SQL_WORKBENCH_VERIFICATION.md` | **EXISTS** | 16,850 bytes<br>2026-10-16 03:25 UTC | Demo Mode SQL Workbench verification report; isolated execution, zero MongoDB writes, baseline cohort guards, ML pipeline integration, 30/30 audit pass. |
+| **25** | `DEMO_SQL_WORKBENCH_USER_GUIDE.md` | `DEMO_SQL_WORKBENCH_USER_GUIDE.md` | **EXISTS** | 18,200 bytes<br>2026-10-16 03:36 UTC | Authoritative Demo Mode SQL Workbench presentation readiness and operator usage guide; 7 query categories, 10-step demo script, safety catalog. |
 
 ---
 
@@ -91,8 +93,10 @@ Every item on the professor's DA3 checklist is classified below with its verifie
 * **Failing Tests:** **ZERO (0 FAIL).**
   * Automated DA3 Test Runner (`scripts/run_da3_tests.py`): **74 / 74 assertions PASS (100%)**.
   * Preflight Diagnostics (`scripts/preflight_check.py`): **34 / 34 checks PASS (100%)**.
-  * Frontend Vitest Tests (`frontend/apps/doctor_web`): **28 / 28 tests PASS (100%)**.
-  * Backend Pytest Collection (`tests/unit/` & `tests/integration/`): **383 / 383 tests PASS (100%)**.
+  * Frontend Vitest Tests (`frontend/apps/doctor_web`): **40 / 40 tests PASS (100%)**.
+  * Demo SQL Workbench End-to-End Audit (`scripts/audit_demo_sql_isolation.py`): **30 / 30 checks PASS (100%)**.
+  * Demo SQL Workbench Pytest Suites (`test_demo_sql_service.py` & `test_demo_sql_ml_history.py`): **24 / 24 tests PASS (100%)**.
+  * Backend Pytest Collection (`tests/unit/` & `tests/integration/`): **407 / 407 tests PASS (100%)**.
   * 12-Point Demonstration Workflow (`scripts/validate_da3_demo_workflow.py`): **12 / 12 steps PASS (100%)**.
 * **Known System Defects:** **ZERO (0 functional defects).**
 * **External Scope Disclosure (Not a Defect):**
@@ -797,6 +801,30 @@ All 5 operational boundaries are explicitly documented:
 * **Strict Read-Only Confirmation:** Throughout Part 8K, MongoDB Atlas remained **strictly READ-ONLY**. Document count on `smart_health_analytics.telemetry_events` remains invariant at **exactly 2,955 documents**. Zero documents were inserted, updated, replaced, or deleted; zero schemas or indexes were modified.
 
 The Smart Health Monitoring System is **100% hardened, independently verified against physical evidence, fully documented, and ready for DA3 defense**.
+
+---
+
+## 28. Demo Mode SQL Workbench — Implementation, Safety Isolation & End-to-End Audit
+
+Following the requirements of Prompts 1–6, an interactive SQL Workbench was designed, implemented, and rigorously audited exclusively within **Demo Mode**.
+
+### 28.1 Core Architectural & Safety Achievements
+1. **Isolated Demo Execution Boundary:** Executed strictly against `smart_health_local.db` (SQLite 3 relational engine, MySQL 8 InnoDB compatible). Completely airgapped from MongoDB Atlas (`MONGODB_SYNC_ENABLED=false`).
+2. **MongoDB Atlas Read-Only Invariant Maintained:** Document count on `smart_health_analytics.telemetry_events` remained **strictly invariant at exactly 2,955 documents**. Zero writes, modifications, or schema alterations were issued.
+3. **Strict Mode Isolation:** Workbench execution is permitted exclusively when `is_demo_mode: True`. Requests with `is_demo_mode: False` or while the real-time simulator is running are rejected with **HTTP 403 Forbidden** or **HTTP 409 Conflict**.
+4. **AST-Level SQL Parser & Defense:** Enforces single-statement execution via `sqlparse`. Stacked queries, DDL (`DROP`, `ALTER`, `TRUNCATE`), database escape (`ATTACH`, `PRAGMA`), and system table access (`users`, `audit_log`, `alembic_version`) are blocked with **HTTP 400 / 403**.
+5. **Clinical Cohort & Physiological Guardrails:** Baseline Kaggle cohort (`P001`–`P005`) is strictly locked against `UPDATE` and `DELETE` (HTTP 403). Non-approved cohorts (`P999`) and out-of-bounds vitals (e.g. Heart Rate $> 250\text{ bpm}$, $\text{SpO}_2 > 100\%$) are rejected with **HTTP 422**.
+6. **Automated ML Pipeline Integration:** Multi-row `INSERT INTO vitals_readings` stamps server-side `source = 'self_added'`, assigns UUIDv4 identifiers, invokes the Isolation Forest model (`MLService.assess_and_persist`), triggers rule-based alert evaluation, and immediately updates demo history and alert feeds.
+7. **Terminal-Style Frontend Interface:** Embedded exclusively within Demo Mode in `frontend/apps/doctor_web`. Features monospaced editor, keyboard shortcuts (`Ctrl+Enter`), pre-configured quick examples, structured results table, mutation status metrics, and ML anomaly badge pills.
+
+### 28.2 Verification & Empirical Test Results
+* **End-to-End Audit Script (`scripts/audit_demo_sql_isolation.py`):** **30 / 30 checks PASSED (100%)**.
+* **Backend Pytest Suites (`test_demo_sql_service.py` & `test_demo_sql_ml_history.py`):** **24 / 24 tests PASSED (100%)**.
+* **Real-Time Mode Regression Suites:** **104 / 104 tests PASSED (100%)** (zero regressions to simulator lifecycle, WebSockets, or live streaming telemetry).
+* **Frontend Test Suite (`frontend/apps/doctor_web`):** **40 / 40 tests PASSED (100%)**.
+* **Frontend Static Verification:** TypeScript: 0 errors; Oxlint: 0 errors; Vite Build: 587ms clean build.
+* **Authoritative Reference:** Detailed evidence, SQL command examples, schema diagrams, and security policies are documented in [`DEMO_SQL_WORKBENCH_VERIFICATION.md`](DEMO_SQL_WORKBENCH_VERIFICATION.md) and [`DEMO_SQL_WORKBENCH_USER_GUIDE.md`](DEMO_SQL_WORKBENCH_USER_GUIDE.md).
+
 
 
 

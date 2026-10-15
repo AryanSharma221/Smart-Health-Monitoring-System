@@ -10,3 +10,4 @@ export * from './demoService';
 export * from './simulatorService';
 export * from './webSocketService';
 export * from './evaluationService';
+export * from './workbenchService';
