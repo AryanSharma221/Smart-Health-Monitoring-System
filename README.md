@@ -1,4 +1,4 @@
-# AI-Powered Smart Health Monitoring System
+# Smart Health Cloud Monitoring System
 
 Version 3.0 — Kaggle Dataset-Aligned DA3 Edition  
 *Simulated Health Telemetry Prototype — NOT FOR MEDICAL USE*
