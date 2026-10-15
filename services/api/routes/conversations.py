@@ -166,7 +166,7 @@ def create_or_get_conversation(
     summary="Get conversation metadata by ID",
 )
 def get_conversation_by_id(
-    conversation_id: str = Path(..., min_length=1, max_length=64, description="Conversation ID"),
+    conversation_id: str = Path(..., min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$", description="Conversation ID"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ConversationResponse:
@@ -213,7 +213,7 @@ def get_conversation_by_id(
     summary="List messages in conversation",
 )
 def list_messages(
-    conversation_id: str = Path(..., min_length=1, max_length=64, description="Conversation ID"),
+    conversation_id: str = Path(..., min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$", description="Conversation ID"),
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     page_size: int = Query(20, ge=1, le=100, description="Page size limit"),
     order: str = Query("asc", pattern="^(asc|desc)$", description="Chronological ordering"),
@@ -273,7 +273,7 @@ def list_messages(
     summary="Send a direct message in a conversation",
 )
 def send_message(
-    conversation_id: str = Path(..., min_length=1, max_length=64, description="Conversation ID"),
+    conversation_id: str = Path(..., min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$", description="Conversation ID"),
     payload: SendMessageRequest = Body(...),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -320,7 +320,7 @@ def send_message(
     summary="Mark incoming conversation messages as read",
 )
 def mark_messages_read(
-    conversation_id: str = Path(..., min_length=1, max_length=64, description="Conversation ID"),
+    conversation_id: str = Path(..., min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$", description="Conversation ID"),
     payload: Optional[MarkReadRequest] = Body(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

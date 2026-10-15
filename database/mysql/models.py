@@ -459,6 +459,7 @@ class VitalsReading(Base):
     __table_args__ = (
         UniqueConstraint("event_id", "metric_code", name="uq_vitals_event_metric"),
         Index("idx_vitals_patient_metric_time", "patient_id", "metric_code", "measured_at"),
+        Index("idx_vitals_patient_measured", "patient_id", "measured_at"),
         Index("idx_vitals_measured_at", "measured_at"),
         CheckConstraint(
             "metric_code IN ('heart_rate', 'spo2', 'temperature', 'respiratory_rate', 'bp_systolic', 'bp_diastolic')",
@@ -1041,4 +1042,33 @@ class AnalyticsOutbox(Base):
 
     def __repr__(self) -> str:
         return f"<AnalyticsOutbox id={self.outbox_id} type='{self.event_type}' agg='{self.aggregate_id}' status='{self.status}'>"
+
+
+class EvaluationRecord(Base):
+    """Isolated test entity for demonstrating CRUD operations without affecting genuine EHR data."""
+
+    __tablename__ = "evaluation_records"
+
+    record_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    patient_id: Mapped[str] = mapped_column(String(32), ForeignKey("patient_profiles.patient_id"), nullable=False)
+    record_type: Mapped[str] = mapped_column(String(32), nullable=False, default="clinical_note")
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    content_text: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="ACTIVE")
+    created_by: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    def __repr__(self) -> str:
+        return f"<EvaluationRecord id='{self.record_id}' patient='{self.patient_id}' status='{self.status}'>"
+
 

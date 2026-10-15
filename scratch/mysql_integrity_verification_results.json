@@ -1,0 +1,1562 @@
+{
+  "timestamp_utc": "2026-10-15T06:39:30.113084+00:00",
+  "total_tables": 18,
+  "views_count": 2,
+  "triggers_count": 1,
+  "rollback_verified": true,
+  "trigger_verified": true,
+  "schema_details": {
+    "total_tables": 18,
+    "tables": {
+      "alert_rules": {
+        "columns_count": 10,
+        "columns": [
+          {
+            "cid": 0,
+            "name": "rule_id",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": true
+          },
+          {
+            "cid": 1,
+            "name": "metric_code",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 2,
+            "name": "operator",
+            "type": "VARCHAR(8)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 3,
+            "name": "configured_value",
+            "type": "NUMERIC(8, 2)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 4,
+            "name": "duration_seconds",
+            "type": "INTEGER",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 5,
+            "name": "severity",
+            "type": "VARCHAR(16)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 6,
+            "name": "is_enabled",
+            "type": "BOOLEAN",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 7,
+            "name": "is_demo_only",
+            "type": "BOOLEAN",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 8,
+            "name": "description",
+            "type": "TEXT",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 9,
+            "name": "created_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          }
+        ],
+        "foreign_keys": [],
+        "indexes_count": 1
+      },
+      "alert_status_history": {
+        "columns_count": 7,
+        "columns": [
+          {
+            "cid": 0,
+            "name": "history_id",
+            "type": "INTEGER",
+            "notnull": true,
+            "pk": true
+          },
+          {
+            "cid": 1,
+            "name": "alert_id",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 2,
+            "name": "old_status",
+            "type": "VARCHAR(16)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 3,
+            "name": "new_status",
+            "type": "VARCHAR(16)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 4,
+            "name": "actor_id",
+            "type": "VARCHAR(64)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 5,
+            "name": "note",
+            "type": "TEXT",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 6,
+            "name": "changed_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          }
+        ],
+        "foreign_keys": [
+          {
+            "id": 0,
+            "table": "users",
+            "from": "actor_id",
+            "to": "user_id",
+            "on_update": "NO ACTION",
+            "on_delete": "SET NULL"
+          },
+          {
+            "id": 1,
+            "table": "alerts",
+            "from": "alert_id",
+            "to": "alert_id",
+            "on_update": "NO ACTION",
+            "on_delete": "CASCADE"
+          }
+        ],
+        "indexes_count": 2
+      },
+      "alerts": {
+        "columns_count": 14,
+        "columns": [
+          {
+            "cid": 0,
+            "name": "alert_id",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": true
+          },
+          {
+            "cid": 1,
+            "name": "patient_id",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 2,
+            "name": "event_id",
+            "type": "VARCHAR(64)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 3,
+            "name": "assessment_id",
+            "type": "VARCHAR(64)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 4,
+            "name": "rule_id",
+            "type": "VARCHAR(32)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 5,
+            "name": "severity",
+            "type": "VARCHAR(16)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 6,
+            "name": "category",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 7,
+            "name": "reason",
+            "type": "TEXT",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 8,
+            "name": "status",
+            "type": "VARCHAR(16)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 9,
+            "name": "acknowledged_by",
+            "type": "VARCHAR(64)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 10,
+            "name": "acknowledged_at",
+            "type": "DATETIME",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 11,
+            "name": "resolved_by",
+            "type": "VARCHAR(64)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 12,
+            "name": "resolved_at",
+            "type": "DATETIME",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 13,
+            "name": "created_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          }
+        ],
+        "foreign_keys": [
+          {
+            "id": 0,
+            "table": "users",
+            "from": "resolved_by",
+            "to": "user_id",
+            "on_update": "NO ACTION",
+            "on_delete": "SET NULL"
+          },
+          {
+            "id": 1,
+            "table": "users",
+            "from": "acknowledged_by",
+            "to": "user_id",
+            "on_update": "NO ACTION",
+            "on_delete": "SET NULL"
+          },
+          {
+            "id": 2,
+            "table": "alert_rules",
+            "from": "rule_id",
+            "to": "rule_id",
+            "on_update": "NO ACTION",
+            "on_delete": "SET NULL"
+          },
+          {
+            "id": 3,
+            "table": "model_assessments",
+            "from": "assessment_id",
+            "to": "assessment_id",
+            "on_update": "NO ACTION",
+            "on_delete": "SET NULL"
+          },
+          {
+            "id": 4,
+            "table": "ingestion_events",
+            "from": "event_id",
+            "to": "event_id",
+            "on_update": "NO ACTION",
+            "on_delete": "SET NULL"
+          },
+          {
+            "id": 5,
+            "table": "patient_profiles",
+            "from": "patient_id",
+            "to": "patient_id",
+            "on_update": "NO ACTION",
+            "on_delete": "CASCADE"
+          }
+        ],
+        "indexes_count": 5
+      },
+      "analytics_outbox": {
+        "columns_count": 11,
+        "columns": [
+          {
+            "cid": 0,
+            "name": "outbox_id",
+            "type": "INTEGER",
+            "notnull": true,
+            "pk": true
+          },
+          {
+            "cid": 1,
+            "name": "event_type",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 2,
+            "name": "aggregate_id",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 3,
+            "name": "payload_json",
+            "type": "TEXT",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 4,
+            "name": "status",
+            "type": "VARCHAR(16)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 5,
+            "name": "attempt_count",
+            "type": "INTEGER",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 6,
+            "name": "max_attempts",
+            "type": "INTEGER",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 7,
+            "name": "last_error",
+            "type": "TEXT",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 8,
+            "name": "created_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 9,
+            "name": "last_attempt_at",
+            "type": "DATETIME",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 10,
+            "name": "completed_at",
+            "type": "DATETIME",
+            "notnull": false,
+            "pk": false
+          }
+        ],
+        "foreign_keys": [],
+        "indexes_count": 2
+      },
+      "audit_logs": {
+        "columns_count": 8,
+        "columns": [
+          {
+            "cid": 0,
+            "name": "audit_id",
+            "type": "INTEGER",
+            "notnull": true,
+            "pk": true
+          },
+          {
+            "cid": 1,
+            "name": "actor_id",
+            "type": "VARCHAR(64)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 2,
+            "name": "action",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 3,
+            "name": "target_type",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 4,
+            "name": "target_id",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 5,
+            "name": "ip_address",
+            "type": "VARCHAR(45)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 6,
+            "name": "metadata_json",
+            "type": "TEXT",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 7,
+            "name": "timestamp",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          }
+        ],
+        "foreign_keys": [
+          {
+            "id": 0,
+            "table": "users",
+            "from": "actor_id",
+            "to": "user_id",
+            "on_update": "NO ACTION",
+            "on_delete": "SET NULL"
+          }
+        ],
+        "indexes_count": 4
+      },
+      "conversations": {
+        "columns_count": 6,
+        "columns": [
+          {
+            "cid": 0,
+            "name": "conversation_id",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": true
+          },
+          {
+            "cid": 1,
+            "name": "patient_id",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 2,
+            "name": "doctor_id",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 3,
+            "name": "is_active",
+            "type": "BOOLEAN",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 4,
+            "name": "created_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 5,
+            "name": "updated_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          }
+        ],
+        "foreign_keys": [
+          {
+            "id": 0,
+            "table": "doctor_profiles",
+            "from": "doctor_id",
+            "to": "doctor_id",
+            "on_update": "NO ACTION",
+            "on_delete": "CASCADE"
+          },
+          {
+            "id": 1,
+            "table": "patient_profiles",
+            "from": "patient_id",
+            "to": "patient_id",
+            "on_update": "NO ACTION",
+            "on_delete": "CASCADE"
+          }
+        ],
+        "indexes_count": 5
+      },
+      "doctor_patient_assignments": {
+        "columns_count": 5,
+        "columns": [
+          {
+            "cid": 0,
+            "name": "doctor_id",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": true
+          },
+          {
+            "cid": 1,
+            "name": "patient_id",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": true
+          },
+          {
+            "cid": 2,
+            "name": "assigned_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 3,
+            "name": "is_active",
+            "type": "BOOLEAN",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 4,
+            "name": "notes",
+            "type": "TEXT",
+            "notnull": false,
+            "pk": false
+          }
+        ],
+        "foreign_keys": [
+          {
+            "id": 0,
+            "table": "patient_profiles",
+            "from": "patient_id",
+            "to": "patient_id",
+            "on_update": "NO ACTION",
+            "on_delete": "CASCADE"
+          },
+          {
+            "id": 1,
+            "table": "doctor_profiles",
+            "from": "doctor_id",
+            "to": "doctor_id",
+            "on_update": "NO ACTION",
+            "on_delete": "CASCADE"
+          }
+        ],
+        "indexes_count": 3
+      },
+      "doctor_profiles": {
+        "columns_count": 9,
+        "columns": [
+          {
+            "cid": 0,
+            "name": "doctor_id",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": true
+          },
+          {
+            "cid": 1,
+            "name": "user_id",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 2,
+            "name": "first_name",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 3,
+            "name": "last_name",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 4,
+            "name": "specialization",
+            "type": "VARCHAR(100)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 5,
+            "name": "license_number",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 6,
+            "name": "contact_phone",
+            "type": "VARCHAR(32)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 7,
+            "name": "created_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 8,
+            "name": "updated_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          }
+        ],
+        "foreign_keys": [
+          {
+            "id": 0,
+            "table": "users",
+            "from": "user_id",
+            "to": "user_id",
+            "on_update": "NO ACTION",
+            "on_delete": "CASCADE"
+          }
+        ],
+        "indexes_count": 3
+      },
+      "evaluation_records": {
+        "columns_count": 9,
+        "columns": [
+          {
+            "cid": 0,
+            "name": "record_id",
+            "type": "VARCHAR(64)",
+            "notnull": false,
+            "pk": true
+          },
+          {
+            "cid": 1,
+            "name": "patient_id",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 2,
+            "name": "record_type",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 3,
+            "name": "title",
+            "type": "VARCHAR(255)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 4,
+            "name": "content_text",
+            "type": "TEXT",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 5,
+            "name": "status",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 6,
+            "name": "created_by",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 7,
+            "name": "created_at",
+            "type": "TIMESTAMP",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 8,
+            "name": "updated_at",
+            "type": "TIMESTAMP",
+            "notnull": false,
+            "pk": false
+          }
+        ],
+        "foreign_keys": [],
+        "indexes_count": 1
+      },
+      "import_batches": {
+        "columns_count": 9,
+        "columns": [
+          {
+            "cid": 0,
+            "name": "batch_id",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": true
+          },
+          {
+            "cid": 1,
+            "name": "source_name",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 2,
+            "name": "filename",
+            "type": "VARCHAR(255)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 3,
+            "name": "file_sha256",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 4,
+            "name": "row_count",
+            "type": "INTEGER",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 5,
+            "name": "status",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 6,
+            "name": "started_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 7,
+            "name": "completed_at",
+            "type": "DATETIME",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 8,
+            "name": "metadata_json",
+            "type": "TEXT",
+            "notnull": false,
+            "pk": false
+          }
+        ],
+        "foreign_keys": [],
+        "indexes_count": 1
+      },
+      "ingestion_events": {
+        "columns_count": 10,
+        "columns": [
+          {
+            "cid": 0,
+            "name": "event_id",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": true
+          },
+          {
+            "cid": 1,
+            "name": "patient_id",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 2,
+            "name": "source",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 3,
+            "name": "source_event_id",
+            "type": "VARCHAR(128)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 4,
+            "name": "batch_id",
+            "type": "VARCHAR(64)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 5,
+            "name": "measured_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 6,
+            "name": "received_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 7,
+            "name": "is_simulated",
+            "type": "BOOLEAN",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 8,
+            "name": "mirror_status",
+            "type": "VARCHAR(16)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 9,
+            "name": "created_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          }
+        ],
+        "foreign_keys": [
+          {
+            "id": 0,
+            "table": "import_batches",
+            "from": "batch_id",
+            "to": "batch_id",
+            "on_update": "NO ACTION",
+            "on_delete": "SET NULL"
+          },
+          {
+            "id": 1,
+            "table": "patient_profiles",
+            "from": "patient_id",
+            "to": "patient_id",
+            "on_update": "NO ACTION",
+            "on_delete": "CASCADE"
+          }
+        ],
+        "indexes_count": 5
+      },
+      "messages": {
+        "columns_count": 10,
+        "columns": [
+          {
+            "cid": 0,
+            "name": "message_id",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": true
+          },
+          {
+            "cid": 1,
+            "name": "conversation_id",
+            "type": "VARCHAR(64)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 2,
+            "name": "sender_id",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 3,
+            "name": "receiver_id",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 4,
+            "name": "patient_context_id",
+            "type": "VARCHAR(32)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 5,
+            "name": "content",
+            "type": "TEXT",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 6,
+            "name": "is_read",
+            "type": "BOOLEAN",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 7,
+            "name": "idempotency_key",
+            "type": "VARCHAR(64)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 8,
+            "name": "created_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 9,
+            "name": "read_at",
+            "type": "DATETIME",
+            "notnull": false,
+            "pk": false
+          }
+        ],
+        "foreign_keys": [
+          {
+            "id": 0,
+            "table": "patient_profiles",
+            "from": "patient_context_id",
+            "to": "patient_id",
+            "on_update": "NO ACTION",
+            "on_delete": "SET NULL"
+          },
+          {
+            "id": 1,
+            "table": "users",
+            "from": "receiver_id",
+            "to": "user_id",
+            "on_update": "NO ACTION",
+            "on_delete": "CASCADE"
+          },
+          {
+            "id": 2,
+            "table": "users",
+            "from": "sender_id",
+            "to": "user_id",
+            "on_update": "NO ACTION",
+            "on_delete": "CASCADE"
+          },
+          {
+            "id": 3,
+            "table": "conversations",
+            "from": "conversation_id",
+            "to": "conversation_id",
+            "on_update": "NO ACTION",
+            "on_delete": "CASCADE"
+          }
+        ],
+        "indexes_count": 10
+      },
+      "model_assessments": {
+        "columns_count": 10,
+        "columns": [
+          {
+            "cid": 0,
+            "name": "assessment_id",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": true
+          },
+          {
+            "cid": 1,
+            "name": "patient_id",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 2,
+            "name": "event_id",
+            "type": "VARCHAR(64)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 3,
+            "name": "model_version",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 4,
+            "name": "score",
+            "type": "NUMERIC(6, 4)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 5,
+            "name": "result",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 6,
+            "name": "features_json",
+            "type": "TEXT",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 7,
+            "name": "time_window_start",
+            "type": "DATETIME",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 8,
+            "name": "time_window_end",
+            "type": "DATETIME",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 9,
+            "name": "created_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          }
+        ],
+        "foreign_keys": [
+          {
+            "id": 0,
+            "table": "ingestion_events",
+            "from": "event_id",
+            "to": "event_id",
+            "on_update": "NO ACTION",
+            "on_delete": "SET NULL"
+          },
+          {
+            "id": 1,
+            "table": "patient_profiles",
+            "from": "patient_id",
+            "to": "patient_id",
+            "on_update": "NO ACTION",
+            "on_delete": "CASCADE"
+          }
+        ],
+        "indexes_count": 3
+      },
+      "notification_deliveries": {
+        "columns_count": 9,
+        "columns": [
+          {
+            "cid": 0,
+            "name": "delivery_id",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": true
+          },
+          {
+            "cid": 1,
+            "name": "alert_id",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 2,
+            "name": "recipient_id",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 3,
+            "name": "channel",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 4,
+            "name": "status",
+            "type": "VARCHAR(16)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 5,
+            "name": "attempts",
+            "type": "INTEGER",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 6,
+            "name": "sent_at",
+            "type": "DATETIME",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 7,
+            "name": "error_code",
+            "type": "VARCHAR(64)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 8,
+            "name": "created_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          }
+        ],
+        "foreign_keys": [
+          {
+            "id": 0,
+            "table": "users",
+            "from": "recipient_id",
+            "to": "user_id",
+            "on_update": "NO ACTION",
+            "on_delete": "CASCADE"
+          },
+          {
+            "id": 1,
+            "table": "alerts",
+            "from": "alert_id",
+            "to": "alert_id",
+            "on_update": "NO ACTION",
+            "on_delete": "CASCADE"
+          }
+        ],
+        "indexes_count": 4
+      },
+      "patient_baselines": {
+        "columns_count": 8,
+        "columns": [
+          {
+            "cid": 0,
+            "name": "baseline_id",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": true
+          },
+          {
+            "cid": 1,
+            "name": "patient_id",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 2,
+            "name": "metric_code",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 3,
+            "name": "window_hours",
+            "type": "INTEGER",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 4,
+            "name": "median_value",
+            "type": "NUMERIC(8, 2)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 5,
+            "name": "mad_value",
+            "type": "NUMERIC(8, 2)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 6,
+            "name": "sample_count",
+            "type": "INTEGER",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 7,
+            "name": "updated_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          }
+        ],
+        "foreign_keys": [
+          {
+            "id": 0,
+            "table": "patient_profiles",
+            "from": "patient_id",
+            "to": "patient_id",
+            "on_update": "NO ACTION",
+            "on_delete": "CASCADE"
+          }
+        ],
+        "indexes_count": 3
+      },
+      "patient_profiles": {
+        "columns_count": 12,
+        "columns": [
+          {
+            "cid": 0,
+            "name": "patient_id",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": true
+          },
+          {
+            "cid": 1,
+            "name": "user_id",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 2,
+            "name": "first_name",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 3,
+            "name": "last_name",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 4,
+            "name": "date_of_birth",
+            "type": "DATE",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 5,
+            "name": "gender",
+            "type": "VARCHAR(16)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 6,
+            "name": "height_cm",
+            "type": "NUMERIC(5, 2)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 7,
+            "name": "weight_kg",
+            "type": "NUMERIC(5, 2)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 8,
+            "name": "contact_phone",
+            "type": "VARCHAR(32)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 9,
+            "name": "emergency_contact",
+            "type": "VARCHAR(64)",
+            "notnull": false,
+            "pk": false
+          },
+          {
+            "cid": 10,
+            "name": "created_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 11,
+            "name": "updated_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          }
+        ],
+        "foreign_keys": [
+          {
+            "id": 0,
+            "table": "users",
+            "from": "user_id",
+            "to": "user_id",
+            "on_update": "NO ACTION",
+            "on_delete": "CASCADE"
+          }
+        ],
+        "indexes_count": 2
+      },
+      "users": {
+        "columns_count": 7,
+        "columns": [
+          {
+            "cid": 0,
+            "name": "user_id",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": true
+          },
+          {
+            "cid": 1,
+            "name": "email",
+            "type": "VARCHAR(255)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 2,
+            "name": "password_hash",
+            "type": "VARCHAR(255)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 3,
+            "name": "role",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 4,
+            "name": "is_active",
+            "type": "BOOLEAN",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 5,
+            "name": "created_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 6,
+            "name": "updated_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          }
+        ],
+        "foreign_keys": [],
+        "indexes_count": 2
+      },
+      "vitals_readings": {
+        "columns_count": 11,
+        "columns": [
+          {
+            "cid": 0,
+            "name": "reading_id",
+            "type": "INTEGER",
+            "notnull": true,
+            "pk": true
+          },
+          {
+            "cid": 1,
+            "name": "event_id",
+            "type": "VARCHAR(64)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 2,
+            "name": "patient_id",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 3,
+            "name": "metric_code",
+            "type": "VARCHAR(32)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 4,
+            "name": "value",
+            "type": "NUMERIC(8, 2)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 5,
+            "name": "unit",
+            "type": "VARCHAR(16)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 6,
+            "name": "raw_value",
+            "type": "NUMERIC(8, 2)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 7,
+            "name": "raw_unit",
+            "type": "VARCHAR(16)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 8,
+            "name": "quality_status",
+            "type": "VARCHAR(16)",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 9,
+            "name": "measured_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          },
+          {
+            "cid": 10,
+            "name": "created_at",
+            "type": "DATETIME",
+            "notnull": true,
+            "pk": false
+          }
+        ],
+        "foreign_keys": [
+          {
+            "id": 0,
+            "table": "patient_profiles",
+            "from": "patient_id",
+            "to": "patient_id",
+            "on_update": "NO ACTION",
+            "on_delete": "CASCADE"
+          },
+          {
+            "id": 1,
+            "table": "ingestion_events",
+            "from": "event_id",
+            "to": "event_id",
+            "on_update": "NO ACTION",
+            "on_delete": "CASCADE"
+          }
+        ],
+        "indexes_count": 6
+      }
+    },
+    "views": [
+      {
+        "name": "v_latest_patient_vitals",
+        "sql": "CREATE VIEW v_latest_patient_vitals AS\nWITH ranked_vitals AS (\n    SELECT \n        reading_id,\n        event_id,\n        patient_id,\n        metric_code,\n        value,\n        unit,\n        raw_value,\n        raw_unit,\n        quality_status,\n        measured_at,\n        ROW_NUMBER() OVER (\n            PARTITION BY patient_id, metric_code \n            ORDER BY measured_at DESC, reading_id DESC\n        ) AS rn\n    FROM vitals_readings\n)\nSELECT \n    reading_id,\n    event_id,\n    patient_id,\n    metric_code,\n    value,\n    unit,\n    raw_value,\n    raw_unit,\n    quality_status,\n    measured_at\nFROM ranked_vitals\nWHERE rn = 1"
+      },
+      {
+        "name": "v_patient_active_alerts",
+        "sql": "CREATE VIEW v_patient_active_alerts AS\nSELECT \n    a.alert_id,\n    a.patient_id,\n    p.first_name AS patient_first_name,\n    p.last_name AS patient_last_name,\n    dpa.doctor_id,\n    a.severity,\n    a.category,\n    a.reason,\n    a.status,\n    a.created_at\nFROM alerts a\nJOIN patient_profiles p ON a.patient_id = p.patient_id\nLEFT JOIN doctor_patient_assignments dpa ON p.patient_id = dpa.patient_id AND dpa.is_active = 1\nWHERE a.status IN ('NEW', 'ACKNOWLEDGED')"
+      }
+    ],
+    "triggers": [
+      {
+        "name": "trg_alert_status_history_after_update",
+        "table": "alerts",
+        "sql": "CREATE TRIGGER trg_alert_status_history_after_update\nAFTER UPDATE OF status ON alerts\nFOR EACH ROW\nWHEN OLD.status != NEW.status\nBEGIN\n    INSERT INTO alert_status_history (\n        alert_id, old_status, new_status, actor_id, note, changed_at\n    ) VALUES (\n        NEW.alert_id, OLD.status, NEW.status, COALESCE(NEW.acknowledged_by, NEW.resolved_by), 'Trigger recorded transition', datetime('now')\n    );\nEND"
+      }
+    ]
+  },
+  "transaction_rollback": {
+    "uncommitted_count": 1,
+    "post_rollback_count": 0,
+    "rollback_success": true
+  },
+  "trigger_verification": {
+    "alert_id": "ALT_ccce200eae",
+    "orig_status": "NEW",
+    "history_before": 0,
+    "history_after": 1,
+    "trigger_fired": true,
+    "recorded_old_status": "NEW",
+    "recorded_new_status": "ACKNOWLEDGED"
+  }
+}

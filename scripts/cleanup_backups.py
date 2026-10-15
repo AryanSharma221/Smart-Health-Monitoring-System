@@ -45,7 +45,7 @@ def is_safe_backup_artifact(file_path: Path, base_dir: Path) -> bool:
         return False
 
     name = file_path.name.lower()
-    return name.startswith("mysql_") or name.startswith("mongodb_")
+    return name.startswith("mysql_") or name.startswith("mongodb_") or name.startswith("relational_")
 
 
 def group_backup_artifacts(backup_dir: Path) -> List[Dict[str, Any]]:

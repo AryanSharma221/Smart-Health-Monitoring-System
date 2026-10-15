@@ -15,11 +15,23 @@ def render_metric_card(
     value: Any,
     unit: Optional[str] = None,
     delta: Optional[str] = None,
+    delta_color: str = "normal",
     help_text: Optional[str] = None,
 ) -> None:
     """
-    Render a clean, high-contrast metric card with explicit units and optional delta.
+    Render a clean, high-contrast metric card with explicit units, optional delta, and delta color styling.
+
+    Args:
+        label: Metric title.
+        value: Metric display value.
+        unit: Optional unit suffix (e.g., 'bpm', '%', '°F').
+        delta: Optional delta indicator text or numeric change.
+        delta_color: Directional coloring for delta ('normal', 'inverse', or 'off'). Defaults to 'normal'.
+        help_text: Optional tooltip explaining metric context.
     """
+    valid_delta_colors = {"normal", "inverse", "off"}
+    safe_delta_color = delta_color if delta_color in valid_delta_colors else "normal"
+
     display_val = str(value) if value is not None else "--"
     if unit and display_val != "--":
         display_val = f"{display_val} {unit}"
@@ -28,6 +40,7 @@ def render_metric_card(
         label=label,
         value=display_val,
         delta=delta,
+        delta_color=safe_delta_color,
         help=help_text,
     )
 

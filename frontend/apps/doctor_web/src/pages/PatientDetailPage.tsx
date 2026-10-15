@@ -9,6 +9,7 @@ import {
   getFixturePatientHistory,
   deriveFeedFreshness,
   resolveLatestMeasurementTime,
+  wsManager,
 } from '../api';
 import type {
   PatientProfile,
@@ -30,7 +31,7 @@ import {
 import { VitalTimeSeriesChart } from '../components/charts';
 import styles from './PatientDetailPage.module.css';
 
-type TimeRangeFilter = 'all' | '24h' | '7d' | 'kaggle_archive';
+type TimeRangeFilter = 'live_15m' | '1h' | '24h' | '7d' | 'kaggle_archive' | 'all';
 
 const SUPPORTED_METRICS: { code: MetricCode; label: string; unit: string }[] = [
   { code: 'heart_rate', label: 'Heart Rate', unit: 'bpm' },
@@ -40,6 +41,10 @@ const SUPPORTED_METRICS: { code: MetricCode; label: string; unit: string }[] = [
 
 function getTimeRangeDescription(range: TimeRangeFilter): string {
   switch (range) {
+    case 'live_15m':
+      return 'Live Stream (Last 15 Minutes)';
+    case '1h':
+      return 'Last 1 Hour';
     case '24h':
       return 'Last 24 Hours';
     case '7d':
@@ -52,24 +57,32 @@ function getTimeRangeDescription(range: TimeRangeFilter): string {
   }
 }
 
-function getTimeRangeBounds(range: TimeRangeFilter): { from?: string; to?: string } {
+function getTimeRangeBounds(range: TimeRangeFilter): { from?: string; to?: string; limit: number } {
+  const now = new Date();
+  if (range === 'live_15m') {
+    const past15m = new Date(now.getTime() - 15 * 60 * 1000);
+    return { from: past15m.toISOString(), to: now.toISOString(), limit: 100 };
+  }
+  if (range === '1h') {
+    const past1h = new Date(now.getTime() - 3600 * 1000);
+    return { from: past1h.toISOString(), to: now.toISOString(), limit: 150 };
+  }
   if (range === '24h') {
-    const now = new Date();
     const past24h = new Date(now.getTime() - 24 * 3600 * 1000);
-    return { from: past24h.toISOString(), to: now.toISOString() };
+    return { from: past24h.toISOString(), to: now.toISOString(), limit: 200 };
   }
   if (range === '7d') {
-    const now = new Date();
     const past7d = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
-    return { from: past7d.toISOString(), to: now.toISOString() };
+    return { from: past7d.toISOString(), to: now.toISOString(), limit: 300 };
   }
   if (range === 'kaggle_archive') {
     return {
       from: '2023-10-01T00:00:00Z',
       to: '2023-10-12T00:00:00Z',
+      limit: 250,
     };
   }
-  return { from: undefined, to: undefined };
+  return { from: undefined, to: undefined, limit: 100 };
 }
 
 export const PatientDetailPage: React.FC = () => {
@@ -172,6 +185,7 @@ export const PatientDetailPage: React.FC = () => {
           metricCode: metric,
           from: bounds.from,
           to: bounds.to,
+          limit: bounds.limit,
         });
         setHistoryReadings(hist);
       } catch (err: unknown) {
@@ -184,6 +198,44 @@ export const PatientDetailPage: React.FC = () => {
     },
     []
   );
+
+  // Subscribe to patient's channel on backend WebSocket
+  useEffect(() => {
+    if (!isFixtureMode && patientId) {
+      wsManager.subscribePatient(patientId);
+    }
+    return () => {
+      if (!isFixtureMode && patientId) {
+        wsManager.unsubscribePatient(patientId);
+      }
+    };
+  }, [patientId, isFixtureMode]);
+
+  // Real-time WebSocket event listener + 5s polling fallback for active streams
+  useEffect(() => {
+    if (isFixtureMode || !patientId) return;
+
+    const unsub = wsManager.subscribeEvents((event) => {
+      const evtPatient = (event.payload as any)?.patient_id || event.payload;
+      if (!evtPatient || evtPatient === patientId) {
+        void loadPatientOverview(patientId, false);
+        void loadHistoryData(patientId, selectedMetric, selectedRange, false);
+      }
+    });
+
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    if (selectedRange === 'live_15m' || selectedRange === '1h' || selectedRange === '24h') {
+      pollTimer = setInterval(() => {
+        void loadPatientOverview(patientId, false);
+        void loadHistoryData(patientId, selectedMetric, selectedRange, false);
+      }, 5000);
+    }
+
+    return () => {
+      unsub();
+      if (pollTimer) clearInterval(pollTimer);
+    };
+  }, [patientId, isFixtureMode, selectedMetric, selectedRange, loadPatientOverview, loadHistoryData]);
 
   // Primary Effect on patientId or fixtureMode change
   useEffect(() => {
@@ -470,7 +522,16 @@ export const PatientDetailPage: React.FC = () => {
                   Measured:{' '}
                   {hrVital?.measuredAt ? formatTimestamp(hrVital.measuredAt) : '— (No reading)'}
                 </span>
-                <span>Source: {hrVital?.source === 'kaggle_csv' ? 'Kaggle Dataset' : 'Simulator'}</span>
+                <span>
+                  Provenance:{' '}
+                  {hrVital?.isSimulated || hrVital?.source === 'smartwatch_simulator' ? (
+                    <strong style={{ color: '#d97706' }}>Simulated Smartwatch (Synthetic)</strong>
+                  ) : hrVital?.source === 'kaggle_csv' ? (
+                    'Kaggle Historical Archive'
+                  ) : (
+                    hrVital?.source || 'Simulator'
+                  )}
+                </span>
               </div>
             </div>
 
@@ -501,7 +562,16 @@ export const PatientDetailPage: React.FC = () => {
                   Measured:{' '}
                   {spo2Vital?.measuredAt ? formatTimestamp(spo2Vital.measuredAt) : '— (No reading)'}
                 </span>
-                <span>Source: {spo2Vital?.source === 'kaggle_csv' ? 'Kaggle Dataset' : 'Simulator'}</span>
+                <span>
+                  Provenance:{' '}
+                  {spo2Vital?.isSimulated || spo2Vital?.source === 'smartwatch_simulator' ? (
+                    <strong style={{ color: '#d97706' }}>Simulated Smartwatch (Synthetic)</strong>
+                  ) : spo2Vital?.source === 'kaggle_csv' ? (
+                    'Kaggle Historical Archive'
+                  ) : (
+                    spo2Vital?.source || 'Simulator'
+                  )}
+                </span>
               </div>
             </div>
 
@@ -532,7 +602,16 @@ export const PatientDetailPage: React.FC = () => {
                   Measured:{' '}
                   {tempVital?.measuredAt ? formatTimestamp(tempVital.measuredAt) : '— (No reading)'}
                 </span>
-                <span>Source: {tempVital?.source === 'kaggle_csv' ? 'Kaggle Dataset' : 'Simulator'}</span>
+                <span>
+                  Provenance:{' '}
+                  {tempVital?.isSimulated || tempVital?.source === 'smartwatch_simulator' ? (
+                    <strong style={{ color: '#d97706' }}>Simulated Smartwatch (Synthetic)</strong>
+                  ) : tempVital?.source === 'kaggle_csv' ? (
+                    'Kaggle Historical Archive'
+                  ) : (
+                    tempVital?.source || 'Simulator'
+                  )}
+                </span>
               </div>
             </div>
 
@@ -601,10 +680,12 @@ export const PatientDetailPage: React.FC = () => {
                   onChange={(e) => setSelectedRange(e.target.value as TimeRangeFilter)}
                   aria-label="Select history time range"
                 >
-                  <option value="all">All Recorded History (Full Archive)</option>
-                  <option value="kaggle_archive">Kaggle Baseline Window (Oct 2023)</option>
+                  <option value="live_15m">Live Stream (Last 15 Minutes)</option>
+                  <option value="1h">Last 1 Hour</option>
                   <option value="24h">Last 24 Hours (Active Stream)</option>
                   <option value="7d">Last 7 Days</option>
+                  <option value="kaggle_archive">Kaggle Baseline Window (Oct 2023)</option>
+                  <option value="all">All Recorded History (Full Archive)</option>
                 </select>
               </div>
 

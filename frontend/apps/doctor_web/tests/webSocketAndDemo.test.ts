@@ -11,8 +11,22 @@ test('WebSocketManager subscribes and notifies status, cleaning up on unsubscrib
 
   assert.ok(receivedSnapshot);
   assert.strictEqual(receivedSnapshot.state, 'disconnected');
+  assert.ok(receivedSnapshot.url.includes('/ws/v1/updates'), 'WebSocket URL must target /ws/v1/updates');
+  assert.strictEqual(receivedSnapshot.hasTicket, false);
+  assert.strictEqual(receivedSnapshot.reconnectAttempts, 0);
 
   // Verify unsubscribe removes listener
+  unsubscribe();
+});
+
+test('WebSocketManager subscribes to events and dispatches messages correctly', () => {
+  let receivedEvent: unknown = null;
+  const unsubscribe = wsManager.subscribeEvents((event) => {
+    receivedEvent = event;
+  });
+
+  // Verify listener registration
+  assert.strictEqual(receivedEvent, null);
   unsubscribe();
 });
 

@@ -1,0 +1,59 @@
+{
+  "captured_at": "2026-10-15T05:39:24.977958+00:00",
+  "benchmark_run_id": "bench_1792017299",
+  "environment": "Python 3.12.4, Windows AMD64, Local SQLite 3 vs MongoDB Atlas Cloud",
+  "workload_measurements": [
+    {
+      "workload_id": "workload_a",
+      "name": "Dataset Overview Summary",
+      "dataset_size": "1,500 Kaggle rows (SQLite) / 2,955 documents (MongoDB Atlas)",
+      "iterations": 20,
+      "warmup_runs": 3,
+      "sql_median_ms": 3.11,
+      "sql_p95_ms": 4.73,
+      "mongo_median_ms": 64.12,
+      "mongo_p95_ms": 75.26,
+      "latency_ratio": 0.05,
+      "limitations": "MongoDB execution time is dominated by internet TLS/TCP network RTT (~60ms) to Atlas cluster."
+    },
+    {
+      "workload_id": "workload_b",
+      "name": "Patient Vitals Statistical Moments",
+      "dataset_size": "815 patient readings for P101",
+      "iterations": 20,
+      "warmup_runs": 3,
+      "sql_median_ms": 5.71,
+      "sql_p95_ms": 6.48,
+      "mongo_median_ms": 63.82,
+      "mongo_p95_ms": 73.04,
+      "latency_ratio": 0.09,
+      "limitations": "Analytical calculation verified with identical numerical results (avg HR ~80 bpm)."
+    },
+    {
+      "workload_id": "workload_c",
+      "name": "Time-Window Filtering",
+      "dataset_size": "Filtered range scan on patient_id and measured_at",
+      "iterations": 20,
+      "warmup_runs": 3,
+      "sql_median_ms": 1.11,
+      "sql_p95_ms": 1.56,
+      "mongo_median_ms": 59.36,
+      "mongo_p95_ms": 71.91,
+      "latency_ratio": 0.02,
+      "limitations": "SQL utilizes composite index idx_vitals_patient_metric_time; MongoDB utilizes idx_telemetry_patient_measured."
+    },
+    {
+      "workload_id": "workload_d",
+      "name": "Time-Bucket Hourly Aggregations",
+      "dataset_size": "Hourly buckets across all cohort measurements",
+      "iterations": 20,
+      "warmup_runs": 3,
+      "sql_median_ms": 9.21,
+      "sql_p95_ms": 11.97,
+      "mongo_median_ms": 138.69,
+      "mongo_p95_ms": 157.43,
+      "latency_ratio": 0.07,
+      "limitations": "Complex pipeline involving $bucketAuto and $group over full document collection."
+    }
+  ]
+}

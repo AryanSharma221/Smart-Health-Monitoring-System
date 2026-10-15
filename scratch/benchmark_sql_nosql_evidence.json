@@ -1,0 +1,248 @@
+{
+  "benchmark_timestamp_utc": "2026-10-15T07:35:46.018858+00:00",
+  "settings": {
+    "app_env": "development",
+    "database_url": "sqlite:///./smart_health_local.db",
+    "mongodb_endpoint": "mongodb+srv://***:***@cluster0.offnaie.mongodb.net/?retryWrites=true&w=majority",
+    "mongodb_sync_enabled": false
+  },
+  "relational_benchmarks": {
+    "metadata": {
+      "engine": "sqlite_relational (MySQL InnoDB schema parity)",
+      "database_file": "smart_health_local.db",
+      "total_queries_benchmarked": 7,
+      "iterations_per_query": 30,
+      "speedup_indexed_vs_scan": 13.52
+    },
+    "queries": [
+      {
+        "id": "SQL_Q1_LATEST_VITALS",
+        "name": "Patient Latest Vitals (Indexed Search)",
+        "category": "indexed_lookup",
+        "sql": "SELECT reading_id, patient_id, metric_code, measured_at, value\nFROM vitals_readings\nWHERE patient_id = 'P101' AND metric_code = 'heart_rate'\nORDER BY measured_at DESC\nLIMIT 50;",
+        "execution_plan": "SEARCH vitals_readings USING INDEX idx_vitals_patient_metric_time (patient_id=? AND metric_code=?)",
+        "rows_returned": 50,
+        "metrics": {
+          "count": 30,
+          "min_ms": 0.059,
+          "mean_ms": 0.065,
+          "median_ms": 0.062,
+          "p95_ms": 0.083,
+          "max_ms": 0.09,
+          "stddev_ms": 0.008
+        }
+      },
+      {
+        "id": "SQL_Q2_UNINDEXED_SCAN",
+        "name": "Unindexed Field Scan & Sorting (Full Table Scan)",
+        "category": "full_table_scan",
+        "sql": "SELECT reading_id, patient_id, measured_at, value\nFROM vitals_readings\nWHERE raw_unit = 'bpm' AND quality_status = 'valid'\nORDER BY value DESC\nLIMIT 50;",
+        "execution_plan": "SCAN vitals_readings | USE TEMP B-TREE FOR ORDER BY",
+        "rows_returned": 50,
+        "metrics": {
+          "count": 30,
+          "min_ms": 0.826,
+          "mean_ms": 0.879,
+          "median_ms": 0.862,
+          "p95_ms": 0.983,
+          "max_ms": 1.085,
+          "stddev_ms": 0.058
+        }
+      },
+      {
+        "id": "SQL_Q3_TIME_RANGE",
+        "name": "Patient Time-Range Bounded Query (Indexed Range)",
+        "category": "indexed_range_scan",
+        "sql": "SELECT reading_id, patient_id, metric_code, value, unit, measured_at\nFROM vitals_readings\nWHERE patient_id = 'P101'\n  AND measured_at >= '2026-10-14 00:00:00'\n  AND measured_at <= '2026-10-15 00:00:00'\nORDER BY measured_at DESC\nLIMIT 50;",
+        "execution_plan": "SEARCH vitals_readings USING INDEX idx_vitals_patient_measured (patient_id=? AND measured_at>? AND measured_at<?)",
+        "rows_returned": 50,
+        "metrics": {
+          "count": 30,
+          "min_ms": 0.066,
+          "mean_ms": 0.072,
+          "median_ms": 0.071,
+          "p95_ms": 0.089,
+          "max_ms": 0.092,
+          "stddev_ms": 0.006
+        }
+      },
+      {
+        "id": "SQL_Q4_ALERT_TRIAGE",
+        "name": "Clinical Alert Retrieval by Patient & Status",
+        "category": "indexed_lookup",
+        "sql": "SELECT alert_id, patient_id, rule_id, severity, category, status, created_at\nFROM alerts\nWHERE patient_id = 'P101' AND status IN ('NEW', 'ACTIVE')\nORDER BY created_at DESC\nLIMIT 25;",
+        "execution_plan": "SEARCH alerts USING INDEX idx_alerts_patient_status_time (patient_id=? AND status=?) | USE TEMP B-TREE FOR ORDER BY",
+        "rows_returned": 25,
+        "metrics": {
+          "count": 30,
+          "min_ms": 0.057,
+          "mean_ms": 0.061,
+          "median_ms": 0.061,
+          "p95_ms": 0.065,
+          "max_ms": 0.07,
+          "stddev_ms": 0.002
+        }
+      },
+      {
+        "id": "SQL_Q5_MULTI_JOIN",
+        "name": "Multi-Table Relational Join (Alerts + Patients + Doctor Assignments)",
+        "category": "multi_table_join",
+        "sql": "SELECT a.alert_id, a.patient_id, p.first_name, p.last_name,\n       dp.first_name AS doctor_first_name, dp.last_name AS doctor_last_name,\n       a.severity, a.status, a.created_at\nFROM alerts a\nINNER JOIN patient_profiles p ON a.patient_id = p.patient_id\nLEFT JOIN doctor_patient_assignments dpa ON p.patient_id = dpa.patient_id AND dpa.is_active = 1\nLEFT JOIN doctor_profiles dp ON dpa.doctor_id = dp.doctor_id\nORDER BY a.created_at DESC\nLIMIT 25;",
+        "execution_plan": "SCAN a USING INDEX idx_alerts_patient_status_time | SEARCH p USING INDEX sqlite_autoindex_patient_profiles_1 (patient_id=?) | SEARCH dpa USING INDEX idx_assignments_patient (patient_id=?) LEFT-JOIN | SEARCH dp USING INDEX sqlite_autoindex_doctor_profiles_1 (doctor_id=?) LEFT-JOIN | USE TEMP B-TREE FOR ORDER BY",
+        "rows_returned": 25,
+        "metrics": {
+          "count": 30,
+          "min_ms": 0.117,
+          "mean_ms": 0.127,
+          "median_ms": 0.125,
+          "p95_ms": 0.141,
+          "max_ms": 0.145,
+          "stddev_ms": 0.008
+        }
+      },
+      {
+        "id": "SQL_Q6_AGGREGATE_GROUP",
+        "name": "Statistical Aggregation with GROUP BY and HAVING",
+        "category": "aggregation",
+        "sql": "SELECT patient_id,\n       COUNT(*) AS reading_count,\n       ROUND(AVG(value), 2) AS mean_hr,\n       ROUND(MIN(value), 2) AS min_hr,\n       ROUND(MAX(value), 2) AS max_hr\nFROM vitals_readings\nWHERE metric_code = 'heart_rate'\nGROUP BY patient_id\nHAVING COUNT(*) > 5\nORDER BY mean_hr DESC;",
+        "execution_plan": "SCAN vitals_readings USING INDEX idx_vitals_patient_metric_time | USE TEMP B-TREE FOR ORDER BY",
+        "rows_returned": 5,
+        "metrics": {
+          "count": 30,
+          "min_ms": 2.091,
+          "mean_ms": 2.383,
+          "median_ms": 2.335,
+          "p95_ms": 2.752,
+          "max_ms": 3.066,
+          "stddev_ms": 0.196
+        }
+      },
+      {
+        "id": "SQL_Q7_TIME_WINDOW_BUCKET",
+        "name": "Time-Window Hourly Bucketing",
+        "category": "time_series_grouping",
+        "sql": "SELECT strftime('%Y-%m-%d %H:00:00', measured_at) AS hour_bucket,\n       COUNT(*) AS count_in_bucket,\n       ROUND(AVG(value), 2) AS avg_value\nFROM vitals_readings\nWHERE patient_id = 'P101' AND metric_code = 'heart_rate'\nGROUP BY hour_bucket\nORDER BY hour_bucket DESC\nLIMIT 24;",
+        "execution_plan": "SEARCH vitals_readings USING INDEX idx_vitals_patient_metric_time (patient_id=? AND metric_code=?) | USE TEMP B-TREE FOR GROUP BY",
+        "rows_returned": 24,
+        "metrics": {
+          "count": 30,
+          "min_ms": 0.656,
+          "mean_ms": 0.764,
+          "median_ms": 0.716,
+          "p95_ms": 1.051,
+          "max_ms": 1.514,
+          "stddev_ms": 0.162
+        }
+      }
+    ]
+  },
+  "mongodb_benchmarks": {
+    "metadata": {
+      "engine": "mongodb_atlas_v8.0.34",
+      "cluster": "mongodb+srv://***:***@cluster0.offnaie.mongodb.net/?retryWrites=true&w=majority",
+      "collection": "telemetry_events",
+      "count_invariant_verified": true,
+      "total_queries_benchmarked": 5,
+      "iterations_per_query": 15
+    },
+    "queries": [
+      {
+        "id": "MONGO_M1_INDEXED_VITALS",
+        "name": "Patient Telemetry Retrieval (Indexed via idx_telemetry_patient_measured)",
+        "category": "indexed_lookup",
+        "plan_summary": "Stage: LIMIT -> FETCH",
+        "execution_stats": {
+          "totalKeysExamined": 20,
+          "totalDocsExamined": 20,
+          "executionTimeMillis": 0
+        },
+        "docs_returned": 20,
+        "metrics": {
+          "count": 15,
+          "min_ms": 64.99,
+          "mean_ms": 211.067,
+          "median_ms": 94.831,
+          "p95_ms": 1403.624,
+          "max_ms": 1403.624,
+          "stddev_ms": 340.143
+        }
+      },
+      {
+        "id": "MONGO_M2_UNINDEXED_METRIC",
+        "name": "Telemetry Filter on Unindexed Metric (Full Collection Scan COLLSCAN)",
+        "category": "collection_scan",
+        "plan_summary": "Stage: LIMIT -> COLLSCAN",
+        "execution_stats": {
+          "totalKeysExamined": 0,
+          "totalDocsExamined": 66,
+          "executionTimeMillis": 0
+        },
+        "docs_returned": 20,
+        "metrics": {
+          "count": 15,
+          "min_ms": 74.17,
+          "mean_ms": 199.475,
+          "median_ms": 153.851,
+          "p95_ms": 528.791,
+          "max_ms": 528.791,
+          "stddev_ms": 131.244
+        }
+      },
+      {
+        "id": "MONGO_M3_TIME_RANGE",
+        "name": "Time-Bounded Telemetry Retrieval",
+        "category": "indexed_range_scan",
+        "plan_summary": "Stage: LIMIT -> FETCH",
+        "execution_stats": {
+          "totalKeysExamined": 20,
+          "totalDocsExamined": 20,
+          "executionTimeMillis": 1
+        },
+        "docs_returned": 20,
+        "metrics": {
+          "count": 15,
+          "min_ms": 71.677,
+          "mean_ms": 178.208,
+          "median_ms": 87.173,
+          "p95_ms": 933.921,
+          "max_ms": 933.921,
+          "stddev_ms": 240.098
+        }
+      },
+      {
+        "id": "MONGO_M4_AGGREGATION_SUMMARY",
+        "name": "Statistical Moments Aggregation ($match -> $group)",
+        "category": "aggregation",
+        "plan_summary": "Pipeline ($match -> $group) executed in-engine; Atlas M0 sandbox blocks direct command explain",
+        "execution_stats": {},
+        "docs_returned": 1,
+        "metrics": {
+          "count": 15,
+          "min_ms": 60.834,
+          "mean_ms": 103.562,
+          "median_ms": 76.527,
+          "p95_ms": 240.426,
+          "max_ms": 240.426,
+          "stddev_ms": 51.886
+        }
+      },
+      {
+        "id": "MONGO_M5_AGGREGATION_PROVENANCE",
+        "name": "Provenance Breakdown Aggregation ($group by source)",
+        "category": "aggregation",
+        "plan_summary": "Pipeline ($match -> $group) executed in-engine; Atlas M0 sandbox blocks direct command explain",
+        "execution_stats": {},
+        "docs_returned": 3,
+        "metrics": {
+          "count": 15,
+          "min_ms": 56.341,
+          "mean_ms": 88.049,
+          "median_ms": 75.201,
+          "p95_ms": 187.683,
+          "max_ms": 187.683,
+          "stddev_ms": 34.928
+        }
+      }
+    ]
+  }
+}

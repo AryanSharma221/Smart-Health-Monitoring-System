@@ -64,19 +64,30 @@ def get_mongo_client(settings: Optional[Settings] = None) -> Optional[MongoClien
         logger.debug("MongoDB Atlas URI not configured. Running in offline/relational-only mode.")
         return None
 
+    # First attempt: configured MongoDB URI (e.g. Atlas cluster)
     try:
         clean_uri = sanitize_mongo_uri(app_settings.mongodb_uri)
         logger.info("Initializing MongoDB Atlas client for endpoint: %s", clean_uri)
-        _mongo_client = MongoClient(
+        client = MongoClient(
             app_settings.mongodb_uri,
             serverSelectionTimeoutMS=app_settings.mongodb_server_selection_timeout_ms,
             connectTimeoutMS=app_settings.mongodb_connect_timeout_ms,
             appname=app_settings.app_name,
         )
+        client.admin.command("ping")
+        _mongo_client = client
         return _mongo_client
     except Exception as exc:
-        logger.error("Failed to construct MongoDB client: %s", str(exc))
-        return None
+        logger.warning("Primary MongoDB endpoint unreachable (%s). Attempting local instance fallback...", exc)
+        try:
+            local_client = MongoClient("mongodb://127.0.0.1:27017", serverSelectionTimeoutMS=2000)
+            local_client.admin.command("ping")
+            logger.info("Connected to local MongoDB instance (mongodb://127.0.0.1:27017).")
+            _mongo_client = local_client
+            return _mongo_client
+        except Exception as local_exc:
+            logger.error("Failed to connect to both primary and fallback MongoDB instances: %s", local_exc)
+            return None
 
 
 def get_mongo_database(settings: Optional[Settings] = None) -> Optional[Database]:

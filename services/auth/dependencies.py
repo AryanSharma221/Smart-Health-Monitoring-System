@@ -84,6 +84,32 @@ def get_current_user(
     return user
 
 
+def get_current_user_optional(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> Optional[User]:
+    """
+    Attempt to resolve User if valid Bearer credentials are provided, but return None
+    rather than raising 401 when unauthenticated.
+    """
+    if not credentials or not credentials.credentials:
+        return None
+
+    try:
+        payload = decode_access_token(credentials.credentials, settings=settings)
+        user_id = payload.get("sub")
+        if not user_id:
+            return None
+        user_repo = UserRepository(db)
+        user = user_repo.get_by_id(user_id)
+        if user and user.is_active:
+            return user
+        return None
+    except Exception:
+        return None
+
+
 def require_role(*allowed_roles: str) -> Callable[[User], User]:
     """
     Factory creating a dependency that enforces server-side role check.

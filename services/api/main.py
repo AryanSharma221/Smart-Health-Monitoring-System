@@ -30,10 +30,13 @@ from services.auth.schemas import UserProfileResponse
 from services.api.routes.alerts import router as alerts_router
 from services.api.routes.auth import router as auth_router
 from services.api.routes.conversations import router as conversations_router
+from services.api.routes.evaluation import router as evaluation_router
 from services.api.routes.predictions import router as predictions_router
 from services.api.routes.readings import router as readings_router
+from services.api.routes.simulator import router as simulator_router
 from services.api.routes.websocket import router as ws_router
 from services.ml_service import get_ml_service
+from services.simulator.worker import get_simulator_worker
 from services.websocket.manager import connection_manager
 
 logger = logging.getLogger(__name__)
@@ -44,9 +47,10 @@ async def app_lifespan(app: FastAPI):
     """Application lifespan context manager managing startup and resource disposal."""
     logger.info("Initializing Smart Health Monitoring System API Gateway")
     
+    settings = getattr(app.state, "settings", None) or get_settings()
+
     # Initialize ML service once during startup (loads IsolationForest and frozen baselines)
     try:
-        settings = getattr(app.state, "settings", None) or get_settings()
         ml_service = get_ml_service(settings)
         if ml_service.is_available:
             logger.info("ML Anomaly Detection service ready (IsolationForest v%s)", ml_service.model_version)
@@ -55,8 +59,25 @@ async def app_lifespan(app: FastAPI):
     except Exception as exc:
         logger.warning("ML service initialization encountered non-fatal error: %s", exc)
 
+    # Initialize Simulator Ingestion Worker if enabled
+    worker = None
+    try:
+        worker = get_simulator_worker(settings)
+        if settings.simulator_ingestion_enabled:
+            logger.info("Simulator ingestion worker is ENABLED. Starting polling task...")
+            await worker.start()
+        else:
+            logger.info("Simulator ingestion worker is DISABLED by configuration.")
+    except Exception as exc:
+        logger.warning("Simulator ingestion worker initialization error: %s", exc)
+
     yield
     logger.info("Shutting down API Gateway: releasing resources")
+    if worker is not None:
+        try:
+            await worker.stop()
+        except Exception as exc:
+            logger.warning("Error stopping simulator worker: %s", exc)
     await connection_manager.close_all()
     dispose_engine()
     close_mongo_client()
@@ -91,7 +112,38 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             allow_headers=["*"],
         )
 
+    @app.get("/", tags=["System"])
+    def root_informational_endpoint(
+        current_settings: Settings = Depends(get_settings),
+    ) -> Dict[str, Any]:
+        """
+        Root informational discovery endpoint.
+        Returns system identity, version, API documentation links, and health routes.
+        """
+        return {
+            "name": current_settings.app_name,
+            "version": "3.0.0",
+            "environment": current_settings.app_env,
+            "status": "online",
+            "documentation": {
+                "swagger_ui": "/docs",
+                "redoc": "/redoc",
+                "openapi_json": "/openapi.json",
+            },
+            "api_endpoints": {
+                "base_v1": current_settings.api_v1_prefix,
+                "health_check": f"{current_settings.api_v1_prefix}/health",
+                "liveness_probe": f"{current_settings.api_v1_prefix}/health/live",
+                "readiness_probe": f"{current_settings.api_v1_prefix}/health/ready",
+                "database_health": f"{current_settings.api_v1_prefix}/health/db",
+                "websocket_stream": "/ws/v1/updates",
+                "simulator_ingestion": f"{current_settings.api_v1_prefix}/simulator/ingestion-status",
+            },
+            "disclaimer": "SIMULATED DATA — NOT FOR MEDICAL USE",
+        }
+
     @app.get("/health", tags=["System"])
+    @app.get(f"{app_settings.api_v1_prefix}/health", tags=["System"])
     async def health_check(
         current_settings: Settings = Depends(get_settings),
     ) -> Dict[str, Any]:
@@ -109,6 +161,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         }
 
     @app.get("/health/live", tags=["System"])
+    @app.get(f"{app_settings.api_v1_prefix}/health/live", tags=["System"])
     async def liveness_check(
         current_settings: Settings = Depends(get_settings),
     ) -> Dict[str, Any]:
@@ -124,6 +177,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         }
 
     @app.get("/health/ready", tags=["System"])
+    @app.get(f"{app_settings.api_v1_prefix}/health/ready", tags=["System"])
     def readiness_check(
         response: Response,
         current_settings: Settings = Depends(get_settings),
@@ -147,14 +201,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         is_mongo_connected, mongo_desc = check_mongo_connectivity(current_settings)
         mongo_status = "connected" if is_mongo_connected else ("unconfigured" if not current_settings.mongodb_uri else "degraded")
 
+        worker = get_simulator_worker(current_settings)
+        sim_status = "disabled"
+        if worker.is_enabled:
+            if worker.last_poll_succeeded is True:
+                sim_status = "streaming"
+            elif worker.last_poll_succeeded is False:
+                sim_status = f"degraded ({worker.last_error_category})"
+            else:
+                sim_status = "initializing"
+
         return {
             "status": "ready",
             "database": "connected",
             "mongodb_mirror": mongo_status,
+            "simulator_ingestion": sim_status,
             "message": "Authoritative database operational. Ready to serve traffic.",
         }
 
     @app.get("/health/db", tags=["System"])
+    @app.get(f"{app_settings.api_v1_prefix}/health/db", tags=["System"])
     def db_health_check(
         db: Session = Depends(get_db),
     ) -> Dict[str, Any]:
@@ -169,6 +235,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         }
 
     @app.get("/health/mongodb", tags=["System"])
+    @app.get(f"{app_settings.api_v1_prefix}/health/mongodb", tags=["System"])
     def mongodb_health_check(
         current_settings: Settings = Depends(get_settings),
         db: Session = Depends(get_db),
@@ -216,6 +283,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Mount Machine Learning Predictions and Assessments Router (both /api/v1 and root)
     app.include_router(predictions_router, prefix=app_settings.api_v1_prefix)
     app.include_router(predictions_router)
+
+    # Mount Smartwatch Sensor Simulator Ingestion Router (both /api/v1 and root)
+    app.include_router(simulator_router, prefix=app_settings.api_v1_prefix)
+    app.include_router(simulator_router)
+
+    # Mount DA3 Evaluation Console Router (both /api/v1 and root)
+    app.include_router(evaluation_router, prefix=app_settings.api_v1_prefix)
+    app.include_router(evaluation_router)
 
     return app
 

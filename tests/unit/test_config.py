@@ -39,7 +39,8 @@ def test_default_development_settings(monkeypatch):
     """Verify non-sensitive default development settings."""
     monkeypatch.delenv("APP_ENV", raising=False)
     monkeypatch.delenv("MYSQL_PASSWORD", raising=False)
-    settings = Settings()
+    monkeypatch.delenv("APP_DEBUG", raising=False)
+    settings = Settings(_env_file=None)
     assert settings.app_name == "Smart Health Monitoring System"
     assert settings.app_env == "development"
     assert settings.app_debug is False
@@ -131,11 +132,13 @@ def test_mysql_url_special_characters():
 
 
 def test_production_invariants_jwt_secret():
-    """Verify production requires a secure, non-default JWT secret of >= 32 chars."""
+    """Verify production requires a secure, non-default JWT secret of >= 32 chars and debug disabled."""
     # Weak/default secret in production must fail
     with pytest.raises(ValueError, match="JWT_SECRET must be at least 32 characters"):
         Settings(
+            _env_file=None,
             app_env="production",
+            app_debug=False,
             jwt_secret="insecure_dev_secret_key_must_be_changed_in_production_at_least_32_chars",
             mysql_password="valid_strong_password_123",
             ingestion_api_key="production_simulator_key_999",
@@ -144,7 +147,9 @@ def test_production_invariants_jwt_secret():
     # Short secret in production must fail
     with pytest.raises(ValueError, match="JWT_SECRET must be at least 32 characters"):
         Settings(
+            _env_file=None,
             app_env="production",
+            app_debug=False,
             jwt_secret="too_short_key",
             mysql_password="valid_strong_password_123",
             ingestion_api_key="production_simulator_key_999",
@@ -153,20 +158,36 @@ def test_production_invariants_jwt_secret():
     # Missing MySQL password in production must fail
     with pytest.raises(ValueError, match="MYSQL_PASSWORD cannot be empty"):
         Settings(
+            _env_file=None,
             app_env="production",
+            app_debug=False,
             jwt_secret="a_very_strong_production_signing_key_32_chars_long",
             mysql_password="",
             ingestion_api_key="production_simulator_key_999",
         )
 
+    # Production with app_debug=True must fail
+    with pytest.raises(ValueError, match="APP_DEBUG must be disabled"):
+        Settings(
+            _env_file=None,
+            app_env="production",
+            app_debug=True,
+            jwt_secret="a_very_strong_production_signing_key_32_chars_long",
+            mysql_password="super_secure_db_password_2026",
+            ingestion_api_key="production_simulator_key_999",
+        )
+
     # Valid production settings pass
     prod_settings = Settings(
+        _env_file=None,
         app_env="production",
+        app_debug=False,
         jwt_secret="a_very_strong_production_signing_key_32_chars_long",
         mysql_password="super_secure_db_password_2026",
         ingestion_api_key="secure_internal_ingest_key_888",
     )
     assert prod_settings.app_env == "production"
+    assert prod_settings.app_debug is False
 
 
 def test_mongodb_ready_validation():

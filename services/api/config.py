@@ -116,6 +116,10 @@ class Settings(BaseSettings):
         default="smart_health_analytics",
         description="Analytics document database name",
     )
+    mongodb_sync_enabled: bool = Field(
+        default=False,
+        description="Master gate for syncing data to MongoDB Atlas. Disabled by default per user directive. Only sync when explicitly commanded.",
+    )
     mongodb_server_selection_timeout_ms: int = Field(
         default=5000,
         ge=100,
@@ -170,6 +174,40 @@ class Settings(BaseSettings):
     model_version: str = Field(
         default="iforest-v1",
         description="Model version identifier for audit tracking",
+    )
+
+    # -------------------------------------------------------------------------
+    # 7. Smartwatch Sensor Simulator Ingestion Settings
+    # -------------------------------------------------------------------------
+    sensor_simulator_base_url: str = Field(
+        default="http://127.0.0.1:8001",
+        description="Base URL of the standalone smartwatch sensor simulator service",
+    )
+    simulator_ingestion_enabled: bool = Field(
+        default=False,
+        description="Whether background ingestion polling of the simulator is enabled",
+    )
+    simulator_poll_interval_seconds: float = Field(
+        default=5.0,
+        ge=0.5,
+        le=300.0,
+        description="Interval in seconds between simulator polling cycles",
+    )
+    simulator_poll_timeout_seconds: float = Field(
+        default=5.0,
+        ge=0.5,
+        le=60.0,
+        description="HTTP request timeout in seconds when polling the simulator",
+    )
+    simulator_api_key: Optional[str] = Field(
+        default=None,
+        description="Optional security header key (X-Simulator-Key) for the simulator",
+    )
+    simulator_batch_limit: int = Field(
+        default=50,
+        ge=1,
+        le=200,
+        description="Maximum readings batch size requested per stream polling cycle",
     )
 
     # -------------------------------------------------------------------------
@@ -247,6 +285,12 @@ class Settings(BaseSettings):
                     "In production, MYSQL_PASSWORD cannot be empty or a template placeholder."
                 )
 
+            # 4. Debug mode must be disabled in production
+            if self.app_debug:
+                raise ValueError(
+                    "In production (APP_ENV=production), APP_DEBUG must be disabled (False)."
+                )
+
         return self
 
     # -------------------------------------------------------------------------
@@ -259,8 +303,6 @@ class Settings(BaseSettings):
         Uses quote_plus so passwords containing '@', ':', '#', '%', '!', etc.
         never break connection string parsing.
         """
-        if self.database_url:
-            return self.database_url
         drv = driver or self.mysql_driver
         safe_user = quote_plus(self.mysql_user)
         safe_password = quote_plus(self.mysql_password)
@@ -271,12 +313,6 @@ class Settings(BaseSettings):
 
     def get_safe_mysql_url(self, driver: str | None = None) -> str:
         """Return database URL with password masked for safe logging and debugging."""
-        if self.database_url:
-            if "@" in self.database_url:
-                prefix, rest = self.database_url.split("@", 1)
-                scheme = prefix.split("://")[0]
-                return f"{scheme}://***:***@{rest}"
-            return self.database_url
         drv = self.mysql_driver
         safe_user = quote_plus(self.mysql_user)
         return (

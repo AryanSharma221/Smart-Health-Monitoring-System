@@ -10,6 +10,7 @@ import {
   MessagesPage,
   SystemStatusPage,
   SettingsPage,
+  DA3EvaluationPage,
   NotFoundPage,
 } from '../pages';
 
@@ -71,6 +72,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/system-status" element={<SystemStatusPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/evaluation" element={<DA3EvaluationPage />} />
       </Route>
 
       {/* Fallback 404 Route */}

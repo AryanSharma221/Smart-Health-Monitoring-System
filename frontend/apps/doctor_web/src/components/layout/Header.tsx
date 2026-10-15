@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth, useDevMode } from '../../hooks';
+import { wsManager, type WsStatusSnapshot } from '../../api';
 import { MenuIcon, BellIcon } from '../ui/Icons';
 import styles from './Header.module.css';
 
@@ -37,6 +38,9 @@ function resolveRouteMeta(pathname: string): RouteMeta {
   if (pathname === '/settings') {
     return { title: 'Workstation Settings', breadcrumb: 'Config / Settings' };
   }
+  if (pathname === '/evaluation') {
+    return { title: 'DA3 Evaluation Console', breadcrumb: 'Academic / DA3 Console' };
+  }
   return { title: 'Clinical Workstation', breadcrumb: 'System' };
 }
 
@@ -44,7 +48,17 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMenu, isMenuOpen }) => {
   const location = useLocation();
   const { currentUser } = useAuth();
   const { isFixtureMode, toggleFixtureMode } = useDevMode();
+  const [wsSnapshot, setWsSnapshot] = useState<WsStatusSnapshot>(() => wsManager.getSnapshot());
   const meta = resolveRouteMeta(location.pathname);
+
+  useEffect(() => {
+    const unsub = wsManager.subscribeStatus((snap) => {
+      setWsSnapshot(snap);
+    });
+    return () => {
+      unsub();
+    };
+  }, []);
 
   return (
     <header className={styles.header} role="banner">
@@ -90,18 +104,41 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMenu, isMenuOpen }) => {
           <span>{isFixtureMode ? 'DEMO MODE — SIMULATED DATA' : 'Live Gateway'}</span>
         </button>
 
-        {/* Backend connectivity indicator (honest offline/unconnected status) */}
+        {/* Backend connectivity & WebSocket indicator */}
         <div
           className={styles.connectivityIndicator}
           role="status"
           title={
             isFixtureMode
               ? 'Demo Mode active: Using isolated Kaggle records. FastAPI gateway offline.'
-              : 'FastAPI Backend Gateway (http://localhost:8000) not connected.'
+              : wsSnapshot.state === 'connected'
+              ? 'FastAPI WebSocket stream connected (ws://localhost:8000/ws/v1/updates).'
+              : wsSnapshot.state === 'connecting' || wsSnapshot.state === 'reconnecting'
+              ? 'FastAPI WebSocket stream connecting...'
+              : 'FastAPI WebSocket stream disconnected. Using HTTP polling fallback.'
           }
         >
-          <span className={styles.offlineDot} aria-hidden="true" />
-          <span>Gateway: Disconnected</span>
+          <span
+            className={
+              isFixtureMode
+                ? styles.fixtureDot
+                : wsSnapshot.state === 'connected'
+                ? styles.liveDot
+                : wsSnapshot.state === 'connecting' || wsSnapshot.state === 'reconnecting'
+                ? styles.connectingDot
+                : styles.offlineDot
+            }
+            aria-hidden="true"
+          />
+          <span>
+            {isFixtureMode
+              ? 'Gateway: Demo'
+              : wsSnapshot.state === 'connected'
+              ? 'Stream: Live'
+              : wsSnapshot.state === 'connecting' || wsSnapshot.state === 'reconnecting'
+              ? 'Stream: Connecting…'
+              : 'Stream: Polling'}
+          </span>
         </div>
 
         {/* Notification control placeholder */}

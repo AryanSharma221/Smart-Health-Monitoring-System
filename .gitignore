@@ -48,6 +48,8 @@ secrets.json
 
 # Database dumps and temporary backup artifacts
 *.db
+*.db*
+*-journal
 *.sqlite*
 *.dump
 *.sql.gz

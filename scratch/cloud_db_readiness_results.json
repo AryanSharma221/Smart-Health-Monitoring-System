@@ -1,0 +1,223 @@
+{
+  "timestamp_utc": "2026-10-15T06:50:56.561381+00:00",
+  "audit_version": "1.0.0",
+  "da3_phase": "Part 7Z \u2014 Cloud Database Configuration and Deployment Readiness",
+  "status": "PASSED",
+  "environment_security": {
+    "app_env": "development",
+    "app_debug": true,
+    "cors_origins": [
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+      "http://localhost:3000"
+    ],
+    "sanitized_mysql_url": "mysql+mysqlconnector://smart_health_app:***@localhost:3306/smart_health",
+    "sanitized_mongo_uri": "mongodb+srv://***:***@cluster0.offnaie.mongodb.net/?retryWrites=true&w=majority",
+    "mongodb_sync_enabled": false,
+    "mongodb_server_selection_timeout_ms": 5000,
+    "mongodb_connect_timeout_ms": 5000,
+    "variables_audited": {
+      "APP_NAME": {
+        "configured": true,
+        "is_sensitive": false,
+        "display_value": "Smart Health Monitoring System"
+      },
+      "APP_ENV": {
+        "configured": true,
+        "is_sensitive": false,
+        "display_value": "development"
+      },
+      "APP_DEBUG": {
+        "configured": true,
+        "is_sensitive": false,
+        "display_value": "True"
+      },
+      "API_HOST": {
+        "configured": true,
+        "is_sensitive": false,
+        "display_value": "127.0.0.1"
+      },
+      "API_PORT": {
+        "configured": true,
+        "is_sensitive": false,
+        "display_value": "8000"
+      },
+      "CORS_ORIGINS": {
+        "configured": true,
+        "is_sensitive": false,
+        "display_value": "['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000']"
+      },
+      "MYSQL_HOST": {
+        "configured": true,
+        "is_sensitive": false,
+        "display_value": "localhost"
+      },
+      "MYSQL_PORT": {
+        "configured": true,
+        "is_sensitive": false,
+        "display_value": "3306"
+      },
+      "MYSQL_DATABASE": {
+        "configured": true,
+        "is_sensitive": false,
+        "display_value": "smart_health"
+      },
+      "MYSQL_USER": {
+        "configured": true,
+        "is_sensitive": false,
+        "display_value": "smart_health_app"
+      },
+      "MYSQL_PASSWORD": {
+        "configured": false,
+        "is_sensitive": true,
+        "display_value": "[REDACTED_SECRET]"
+      },
+      "MONGODB_URI": {
+        "configured": true,
+        "is_sensitive": true,
+        "display_value": "[REDACTED_SECRET]"
+      },
+      "MONGODB_DATABASE": {
+        "configured": true,
+        "is_sensitive": false,
+        "display_value": "smart_health_analytics"
+      },
+      "MONGODB_SYNC_ENABLED": {
+        "configured": true,
+        "is_sensitive": false,
+        "display_value": "False"
+      },
+      "JWT_SECRET": {
+        "configured": true,
+        "is_sensitive": true,
+        "display_value": "[REDACTED_SECRET]"
+      },
+      "INGESTION_API_KEY": {
+        "configured": true,
+        "is_sensitive": true,
+        "display_value": "[REDACTED_SECRET]"
+      }
+    }
+  },
+  "relational_database": {
+    "engine_dialect": "sqlite",
+    "ping_latency_ms": 0.619,
+    "total_audit_latency_ms": 17.137,
+    "total_patients": 5,
+    "demo_cohort_patients": 5,
+    "total_vitals_readings": 12222,
+    "kaggle_baseline_records": 1500,
+    "outbox_pending_events": 3690,
+    "outbox_completed_events": 1450
+  },
+  "mongodb_atlas": {
+    "cluster_endpoint": "mongodb+srv://***:***@cluster0.offnaie.mongodb.net/?retryWrites=true&w=majority",
+    "database_name": "smart_health_analytics",
+    "server_version": "8.0.34",
+    "ping_latencies_ms": [
+      1558.59,
+      60.67,
+      90.97,
+      56.47,
+      70.61
+    ],
+    "latency_stats_ms": {
+      "avg": 367.46,
+      "min": 56.47,
+      "max": 1558.59
+    },
+    "collections": [
+      "alert_events",
+      "telemetry_events"
+    ],
+    "telemetry_events_count": 2955,
+    "alert_events_count": 0,
+    "telemetry_indexes": [
+      "_id_",
+      "idx_telemetry_patient_measured",
+      "idx_telemetry_measured_at",
+      "idx_telemetry_source",
+      "idx_telemetry_simulated",
+      "idx_telemetry_source_event_id"
+    ],
+    "sample_document_keys": [
+      "event_id",
+      "patient_id",
+      "measured_at",
+      "received_at",
+      "source",
+      "source_event_id",
+      "is_simulated",
+      "metrics",
+      "readings_summary",
+      "mirrored_at",
+      "schema_version"
+    ],
+    "read_only_invariant_preserved": true
+  },
+  "health_probes": {
+    "/health/live": {
+      "description": "Process Liveness",
+      "status_code": 200,
+      "latency_ms": 17.97,
+      "response": {
+        "status": "alive",
+        "service": "Smart Health Monitoring System",
+        "version": "3.0.0"
+      }
+    },
+    "/health/ready": {
+      "description": "Service Readiness & Dependency Audit",
+      "status_code": 200,
+      "latency_ms": 84.54,
+      "response": {
+        "status": "ready",
+        "database": "connected",
+        "mongodb_mirror": "connected",
+        "simulator_ingestion": "streaming",
+        "message": "Authoritative database operational. Ready to serve traffic."
+      }
+    },
+    "/health/db": {
+      "description": "Relational Authoritative DB Status",
+      "status_code": 200,
+      "latency_ms": 1.95,
+      "response": {
+        "status": "connected",
+        "database": "mysql_innodb"
+      }
+    },
+    "/health/mongodb": {
+      "description": "MongoDB Atlas Status & Outbox Telemetry",
+      "status_code": 200,
+      "latency_ms": 63.51,
+      "response": {
+        "status": "connected",
+        "database": "smart_health_analytics",
+        "endpoint": "mongodb+srv://***:***@cluster0.offnaie.mongodb.net/?retryWrites=true&w=majority",
+        "outbox_queue": {
+          "pending": 3690,
+          "processing": 0,
+          "completed": 1450,
+          "failed": 0
+        }
+      }
+    }
+  },
+  "deployment_checks": {
+    "dockerfile_non_root_user": true,
+    "dockerfile_healthcheck_defined": true,
+    "dockerfile_no_hardcoded_secrets": true,
+    "dockerfile_multi_stage_or_slim": true,
+    "compose_service_dependency": true,
+    "compose_isolated_network": true,
+    "compose_persistent_volume": true,
+    "compose_env_variable_interpolation": true,
+    "dockerignore_blocks_env": true,
+    "dockerignore_blocks_secrets": true,
+    "dockerignore_blocks_backups": true,
+    "env_example_placeholder_secrets": true,
+    "env_prod_template_documented": true
+  },
+  "audit_duration_ms": 2946.94
+}

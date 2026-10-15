@@ -113,7 +113,7 @@ A 3-column academic milestone roadmap (DA1 $\rightarrow$ DA2 $\rightarrow$ DA3) 
 
 ---
 
-## 4. Slide 4: System Architecture & The Polyglot Persistence Model
+## Slide 4: System Architecture & The Polyglot Persistence Model
 
 ### Slide Title
 **Polyglot Persistence Architecture & Data Flow**

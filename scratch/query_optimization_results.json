@@ -1,0 +1,1009 @@
+{
+  "timestamp_utc": "2026-10-15T07:30:40.840428+00:00",
+  "relational_indexes_count": 62,
+  "relational_indexes": [
+    {
+      "table": "alert_rules",
+      "index_name": "sqlite_autoindex_alert_rules_1",
+      "columns": [
+        "rule_id"
+      ],
+      "is_primary_key": true,
+      "is_auto_generated": true,
+      "sql_definition": "(Auto-generated PRIMARY KEY / UNIQUE constraint)"
+    },
+    {
+      "table": "alert_status_history",
+      "index_name": "idx_alert_history_alert_time",
+      "columns": [
+        "alert_id",
+        "changed_at"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_alert_history_alert_time ON alert_status_history (alert_id, changed_at)"
+    },
+    {
+      "table": "alert_status_history",
+      "index_name": "ix_alert_status_history_alert_id",
+      "columns": [
+        "alert_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX ix_alert_status_history_alert_id ON alert_status_history (alert_id)"
+    },
+    {
+      "table": "alerts",
+      "index_name": "idx_alerts_patient_status_time",
+      "columns": [
+        "patient_id",
+        "status",
+        "created_at"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_alerts_patient_status_time ON alerts (patient_id, status, created_at)"
+    },
+    {
+      "table": "alerts",
+      "index_name": "idx_alerts_status_created",
+      "columns": [
+        "status",
+        "created_at"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_alerts_status_created ON alerts (status, created_at)"
+    },
+    {
+      "table": "alerts",
+      "index_name": "ix_alerts_patient_id",
+      "columns": [
+        "patient_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX ix_alerts_patient_id ON alerts (patient_id)"
+    },
+    {
+      "table": "alerts",
+      "index_name": "sqlite_autoindex_alerts_1",
+      "columns": [
+        "alert_id"
+      ],
+      "is_primary_key": true,
+      "is_auto_generated": true,
+      "sql_definition": "(Auto-generated PRIMARY KEY / UNIQUE constraint)"
+    },
+    {
+      "table": "alerts",
+      "index_name": "sqlite_autoindex_alerts_2",
+      "columns": [
+        "event_id",
+        "rule_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": true,
+      "sql_definition": "(Auto-generated PRIMARY KEY / UNIQUE constraint)"
+    },
+    {
+      "table": "analytics_outbox",
+      "index_name": "idx_outbox_aggregate",
+      "columns": [
+        "event_type",
+        "aggregate_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_outbox_aggregate ON analytics_outbox (event_type, aggregate_id)"
+    },
+    {
+      "table": "analytics_outbox",
+      "index_name": "idx_outbox_status_created",
+      "columns": [
+        "status",
+        "created_at"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_outbox_status_created ON analytics_outbox (status, created_at)"
+    },
+    {
+      "table": "audit_logs",
+      "index_name": "idx_audit_actor_time",
+      "columns": [
+        "actor_id",
+        "timestamp"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_audit_actor_time ON audit_logs (actor_id, timestamp)"
+    },
+    {
+      "table": "audit_logs",
+      "index_name": "idx_audit_target",
+      "columns": [
+        "target_type",
+        "target_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_audit_target ON audit_logs (target_type, target_id)"
+    },
+    {
+      "table": "audit_logs",
+      "index_name": "idx_audit_timestamp",
+      "columns": [
+        "timestamp"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_audit_timestamp ON audit_logs (timestamp)"
+    },
+    {
+      "table": "audit_logs",
+      "index_name": "ix_audit_logs_actor_id",
+      "columns": [
+        "actor_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX ix_audit_logs_actor_id ON audit_logs (actor_id)"
+    },
+    {
+      "table": "conversations",
+      "index_name": "idx_conversations_updated",
+      "columns": [
+        "updated_at"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_conversations_updated ON conversations (updated_at)"
+    },
+    {
+      "table": "conversations",
+      "index_name": "ix_conversations_doctor_id",
+      "columns": [
+        "doctor_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX ix_conversations_doctor_id ON conversations (doctor_id)"
+    },
+    {
+      "table": "conversations",
+      "index_name": "ix_conversations_patient_id",
+      "columns": [
+        "patient_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX ix_conversations_patient_id ON conversations (patient_id)"
+    },
+    {
+      "table": "conversations",
+      "index_name": "sqlite_autoindex_conversations_1",
+      "columns": [
+        "conversation_id"
+      ],
+      "is_primary_key": true,
+      "is_auto_generated": true,
+      "sql_definition": "(Auto-generated PRIMARY KEY / UNIQUE constraint)"
+    },
+    {
+      "table": "conversations",
+      "index_name": "sqlite_autoindex_conversations_2",
+      "columns": [
+        "patient_id",
+        "doctor_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": true,
+      "sql_definition": "(Auto-generated PRIMARY KEY / UNIQUE constraint)"
+    },
+    {
+      "table": "doctor_patient_assignments",
+      "index_name": "idx_assignments_doctor_active",
+      "columns": [
+        "doctor_id",
+        "is_active"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_assignments_doctor_active ON doctor_patient_assignments (doctor_id, is_active)"
+    },
+    {
+      "table": "doctor_patient_assignments",
+      "index_name": "idx_assignments_patient",
+      "columns": [
+        "patient_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_assignments_patient ON doctor_patient_assignments (patient_id)"
+    },
+    {
+      "table": "doctor_patient_assignments",
+      "index_name": "sqlite_autoindex_doctor_patient_assignments_1",
+      "columns": [
+        "doctor_id",
+        "patient_id"
+      ],
+      "is_primary_key": true,
+      "is_auto_generated": true,
+      "sql_definition": "(Auto-generated PRIMARY KEY / UNIQUE constraint)"
+    },
+    {
+      "table": "doctor_profiles",
+      "index_name": "ix_doctor_profiles_user_id",
+      "columns": [
+        "user_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE UNIQUE INDEX ix_doctor_profiles_user_id ON doctor_profiles (user_id)"
+    },
+    {
+      "table": "doctor_profiles",
+      "index_name": "sqlite_autoindex_doctor_profiles_1",
+      "columns": [
+        "doctor_id"
+      ],
+      "is_primary_key": true,
+      "is_auto_generated": true,
+      "sql_definition": "(Auto-generated PRIMARY KEY / UNIQUE constraint)"
+    },
+    {
+      "table": "doctor_profiles",
+      "index_name": "sqlite_autoindex_doctor_profiles_2",
+      "columns": [
+        "license_number"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": true,
+      "sql_definition": "(Auto-generated PRIMARY KEY / UNIQUE constraint)"
+    },
+    {
+      "table": "evaluation_records",
+      "index_name": "sqlite_autoindex_evaluation_records_1",
+      "columns": [
+        "record_id"
+      ],
+      "is_primary_key": true,
+      "is_auto_generated": true,
+      "sql_definition": "(Auto-generated PRIMARY KEY / UNIQUE constraint)"
+    },
+    {
+      "table": "import_batches",
+      "index_name": "sqlite_autoindex_import_batches_1",
+      "columns": [
+        "batch_id"
+      ],
+      "is_primary_key": true,
+      "is_auto_generated": true,
+      "sql_definition": "(Auto-generated PRIMARY KEY / UNIQUE constraint)"
+    },
+    {
+      "table": "ingestion_events",
+      "index_name": "idx_events_mirror_status",
+      "columns": [
+        "mirror_status"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_events_mirror_status ON ingestion_events (mirror_status)"
+    },
+    {
+      "table": "ingestion_events",
+      "index_name": "idx_events_patient_measured",
+      "columns": [
+        "patient_id",
+        "measured_at"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_events_patient_measured ON ingestion_events (patient_id, measured_at)"
+    },
+    {
+      "table": "ingestion_events",
+      "index_name": "ix_ingestion_events_patient_id",
+      "columns": [
+        "patient_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX ix_ingestion_events_patient_id ON ingestion_events (patient_id)"
+    },
+    {
+      "table": "ingestion_events",
+      "index_name": "sqlite_autoindex_ingestion_events_1",
+      "columns": [
+        "event_id"
+      ],
+      "is_primary_key": true,
+      "is_auto_generated": true,
+      "sql_definition": "(Auto-generated PRIMARY KEY / UNIQUE constraint)"
+    },
+    {
+      "table": "ingestion_events",
+      "index_name": "sqlite_autoindex_ingestion_events_2",
+      "columns": [
+        "source",
+        "source_event_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": true,
+      "sql_definition": "(Auto-generated PRIMARY KEY / UNIQUE constraint)"
+    },
+    {
+      "table": "messages",
+      "index_name": "idx_messages_conversation_time",
+      "columns": [
+        "conversation_id",
+        "created_at"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_messages_conversation_time ON messages (conversation_id, created_at)"
+    },
+    {
+      "table": "messages",
+      "index_name": "idx_messages_conversation_unread",
+      "columns": [
+        "conversation_id",
+        "is_read",
+        "receiver_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_messages_conversation_unread ON messages (conversation_id, is_read, receiver_id)"
+    },
+    {
+      "table": "messages",
+      "index_name": "idx_messages_receiver_read_time",
+      "columns": [
+        "receiver_id",
+        "is_read",
+        "created_at"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_messages_receiver_read_time ON messages (receiver_id, is_read, created_at)"
+    },
+    {
+      "table": "messages",
+      "index_name": "idx_messages_sender_time",
+      "columns": [
+        "sender_id",
+        "created_at"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_messages_sender_time ON messages (sender_id, created_at)"
+    },
+    {
+      "table": "messages",
+      "index_name": "ix_messages_conversation_id",
+      "columns": [
+        "conversation_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX ix_messages_conversation_id ON messages (conversation_id)"
+    },
+    {
+      "table": "messages",
+      "index_name": "ix_messages_patient_context_id",
+      "columns": [
+        "patient_context_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX ix_messages_patient_context_id ON messages (patient_context_id)"
+    },
+    {
+      "table": "messages",
+      "index_name": "ix_messages_receiver_id",
+      "columns": [
+        "receiver_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX ix_messages_receiver_id ON messages (receiver_id)"
+    },
+    {
+      "table": "messages",
+      "index_name": "ix_messages_sender_id",
+      "columns": [
+        "sender_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX ix_messages_sender_id ON messages (sender_id)"
+    },
+    {
+      "table": "messages",
+      "index_name": "sqlite_autoindex_messages_1",
+      "columns": [
+        "message_id"
+      ],
+      "is_primary_key": true,
+      "is_auto_generated": true,
+      "sql_definition": "(Auto-generated PRIMARY KEY / UNIQUE constraint)"
+    },
+    {
+      "table": "messages",
+      "index_name": "uq_messages_sender_idempotency",
+      "columns": [
+        "sender_id",
+        "idempotency_key"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE UNIQUE INDEX uq_messages_sender_idempotency ON messages (sender_id, idempotency_key)"
+    },
+    {
+      "table": "model_assessments",
+      "index_name": "idx_assessments_patient_time",
+      "columns": [
+        "patient_id",
+        "created_at"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_assessments_patient_time ON model_assessments (patient_id, created_at)"
+    },
+    {
+      "table": "model_assessments",
+      "index_name": "ix_model_assessments_patient_id",
+      "columns": [
+        "patient_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX ix_model_assessments_patient_id ON model_assessments (patient_id)"
+    },
+    {
+      "table": "model_assessments",
+      "index_name": "sqlite_autoindex_model_assessments_1",
+      "columns": [
+        "assessment_id"
+      ],
+      "is_primary_key": true,
+      "is_auto_generated": true,
+      "sql_definition": "(Auto-generated PRIMARY KEY / UNIQUE constraint)"
+    },
+    {
+      "table": "notification_deliveries",
+      "index_name": "idx_deliveries_recipient_status",
+      "columns": [
+        "recipient_id",
+        "status"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_deliveries_recipient_status ON notification_deliveries (recipient_id, status)"
+    },
+    {
+      "table": "notification_deliveries",
+      "index_name": "ix_notification_deliveries_alert_id",
+      "columns": [
+        "alert_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX ix_notification_deliveries_alert_id ON notification_deliveries (alert_id)"
+    },
+    {
+      "table": "notification_deliveries",
+      "index_name": "ix_notification_deliveries_recipient_id",
+      "columns": [
+        "recipient_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX ix_notification_deliveries_recipient_id ON notification_deliveries (recipient_id)"
+    },
+    {
+      "table": "notification_deliveries",
+      "index_name": "sqlite_autoindex_notification_deliveries_1",
+      "columns": [
+        "delivery_id"
+      ],
+      "is_primary_key": true,
+      "is_auto_generated": true,
+      "sql_definition": "(Auto-generated PRIMARY KEY / UNIQUE constraint)"
+    },
+    {
+      "table": "patient_baselines",
+      "index_name": "ix_patient_baselines_patient_id",
+      "columns": [
+        "patient_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX ix_patient_baselines_patient_id ON patient_baselines (patient_id)"
+    },
+    {
+      "table": "patient_baselines",
+      "index_name": "sqlite_autoindex_patient_baselines_1",
+      "columns": [
+        "baseline_id"
+      ],
+      "is_primary_key": true,
+      "is_auto_generated": true,
+      "sql_definition": "(Auto-generated PRIMARY KEY / UNIQUE constraint)"
+    },
+    {
+      "table": "patient_baselines",
+      "index_name": "sqlite_autoindex_patient_baselines_2",
+      "columns": [
+        "patient_id",
+        "metric_code",
+        "window_hours"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": true,
+      "sql_definition": "(Auto-generated PRIMARY KEY / UNIQUE constraint)"
+    },
+    {
+      "table": "patient_profiles",
+      "index_name": "ix_patient_profiles_user_id",
+      "columns": [
+        "user_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE UNIQUE INDEX ix_patient_profiles_user_id ON patient_profiles (user_id)"
+    },
+    {
+      "table": "patient_profiles",
+      "index_name": "sqlite_autoindex_patient_profiles_1",
+      "columns": [
+        "patient_id"
+      ],
+      "is_primary_key": true,
+      "is_auto_generated": true,
+      "sql_definition": "(Auto-generated PRIMARY KEY / UNIQUE constraint)"
+    },
+    {
+      "table": "users",
+      "index_name": "ix_users_email",
+      "columns": [
+        "email"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE UNIQUE INDEX ix_users_email ON users (email)"
+    },
+    {
+      "table": "users",
+      "index_name": "sqlite_autoindex_users_1",
+      "columns": [
+        "user_id"
+      ],
+      "is_primary_key": true,
+      "is_auto_generated": true,
+      "sql_definition": "(Auto-generated PRIMARY KEY / UNIQUE constraint)"
+    },
+    {
+      "table": "vitals_readings",
+      "index_name": "idx_vitals_measured_at",
+      "columns": [
+        "measured_at"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_vitals_measured_at ON vitals_readings (measured_at)"
+    },
+    {
+      "table": "vitals_readings",
+      "index_name": "idx_vitals_patient_measured",
+      "columns": [
+        "patient_id",
+        "measured_at"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_vitals_patient_measured ON vitals_readings (patient_id, measured_at)"
+    },
+    {
+      "table": "vitals_readings",
+      "index_name": "idx_vitals_patient_metric_time",
+      "columns": [
+        "patient_id",
+        "metric_code",
+        "measured_at"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX idx_vitals_patient_metric_time ON vitals_readings (patient_id, metric_code, measured_at)"
+    },
+    {
+      "table": "vitals_readings",
+      "index_name": "ix_vitals_readings_event_id",
+      "columns": [
+        "event_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX ix_vitals_readings_event_id ON vitals_readings (event_id)"
+    },
+    {
+      "table": "vitals_readings",
+      "index_name": "ix_vitals_readings_patient_id",
+      "columns": [
+        "patient_id"
+      ],
+      "is_primary_key": false,
+      "is_auto_generated": false,
+      "sql_definition": "CREATE INDEX ix_vitals_readings_patient_id ON vitals_readings (patient_id)"
+    },
+    {
+      "table": "vitals_readings",
+      "index_name": "sqlite_autoindex_vitals_readings_1",
+      "columns": [
+        "event_id",
+        "metric_code"
+      ],
+      "is_primary_key": true,
+      "is_auto_generated": true,
+      "sql_definition": "(Auto-generated PRIMARY KEY / UNIQUE constraint)"
+    }
+  ],
+  "mongodb_indexes": {
+    "telemetry_events": [
+      {
+        "name": "_id_",
+        "keys": [
+          [
+            "_id",
+            1
+          ]
+        ],
+        "unique": false,
+        "sparse": false
+      },
+      {
+        "name": "idx_telemetry_patient_measured",
+        "keys": [
+          [
+            "patient_id",
+            1
+          ],
+          [
+            "measured_at",
+            -1
+          ]
+        ],
+        "unique": false,
+        "sparse": false
+      },
+      {
+        "name": "idx_telemetry_measured_at",
+        "keys": [
+          [
+            "measured_at",
+            -1
+          ]
+        ],
+        "unique": false,
+        "sparse": false
+      },
+      {
+        "name": "idx_telemetry_source",
+        "keys": [
+          [
+            "source",
+            1
+          ]
+        ],
+        "unique": false,
+        "sparse": false
+      },
+      {
+        "name": "idx_telemetry_simulated",
+        "keys": [
+          [
+            "is_simulated",
+            1
+          ]
+        ],
+        "unique": false,
+        "sparse": false
+      },
+      {
+        "name": "idx_telemetry_source_event_id",
+        "keys": [
+          [
+            "source_event_id",
+            1
+          ]
+        ],
+        "unique": false,
+        "sparse": true
+      }
+    ],
+    "alert_events": [
+      {
+        "name": "_id_",
+        "keys": [
+          [
+            "_id",
+            1
+          ]
+        ],
+        "unique": false,
+        "sparse": false
+      },
+      {
+        "name": "idx_alerts_patient_created",
+        "keys": [
+          [
+            "patient_id",
+            1
+          ],
+          [
+            "created_at",
+            -1
+          ]
+        ],
+        "unique": false,
+        "sparse": false
+      },
+      {
+        "name": "idx_alerts_status_severity",
+        "keys": [
+          [
+            "status",
+            1
+          ],
+          [
+            "severity",
+            1
+          ]
+        ],
+        "unique": false,
+        "sparse": false
+      },
+      {
+        "name": "idx_alerts_rule_id",
+        "keys": [
+          [
+            "rule_id",
+            1
+          ]
+        ],
+        "unique": false,
+        "sparse": false
+      },
+      {
+        "name": "idx_alerts_event_id",
+        "keys": [
+          [
+            "event_id",
+            1
+          ]
+        ],
+        "unique": false,
+        "sparse": false
+      }
+    ]
+  },
+  "sql_execution_plans": [
+    {
+      "id": "Q1_INDEXED_VITALS",
+      "name": "Patient-Specific Reading Retrieval with Metric & Temporal Order (Indexed)",
+      "sql": "SELECT reading_id, patient_id, metric_code, measured_at, value\nFROM vitals_readings\nWHERE patient_id = 'P101' AND metric_code = 'heart_rate'\nORDER BY measured_at DESC\nLIMIT 50;",
+      "raw_plan_rows": [
+        [
+          5,
+          0,
+          0,
+          "SEARCH vitals_readings USING INDEX idx_vitals_patient_metric_time (patient_id=? AND metric_code=?)"
+        ]
+      ],
+      "plan_summary": "SEARCH vitals_readings USING INDEX idx_vitals_patient_metric_time (patient_id=? AND metric_code=?)"
+    },
+    {
+      "id": "Q2_UNINDEXED_VITALS",
+      "name": "Unindexed Field Scan & Sorting (Full Table Scan with Sort Buffer)",
+      "sql": "SELECT reading_id, patient_id, measured_at, value\nFROM vitals_readings\nWHERE raw_unit = 'bpm' AND quality_status = 'valid'\nORDER BY value DESC\nLIMIT 50;",
+      "raw_plan_rows": [
+        [
+          4,
+          0,
+          0,
+          "SCAN vitals_readings"
+        ],
+        [
+          22,
+          0,
+          0,
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      ],
+      "plan_summary": "SCAN vitals_readings | USE TEMP B-TREE FOR ORDER BY"
+    },
+    {
+      "id": "Q3_TIME_RANGE",
+      "name": "Patient Time-Range Bounded Observation Retrieval",
+      "sql": "SELECT reading_id, patient_id, metric_code, value, unit, measured_at\nFROM vitals_readings\nWHERE patient_id = 'P101'\n  AND measured_at >= '2026-10-14 00:00:00'\n  AND measured_at <= '2026-10-15 00:00:00'\nORDER BY measured_at DESC\nLIMIT 50;",
+      "raw_plan_rows": [
+        [
+          5,
+          0,
+          0,
+          "SEARCH vitals_readings USING INDEX idx_vitals_patient_measured (patient_id=? AND measured_at>? AND measured_at<?)"
+        ]
+      ],
+      "plan_summary": "SEARCH vitals_readings USING INDEX idx_vitals_patient_measured (patient_id=? AND measured_at>? AND measured_at<?)"
+    },
+    {
+      "id": "Q4_ALERT_TRIAGE",
+      "name": "Active Clinical Alert Retrieval by Patient & Status",
+      "sql": "SELECT alert_id, patient_id, rule_id, severity, category, status, created_at\nFROM alerts\nWHERE patient_id = 'P101' AND status IN ('NEW', 'ACTIVE')\nORDER BY created_at DESC\nLIMIT 25;",
+      "raw_plan_rows": [
+        [
+          5,
+          0,
+          0,
+          "SEARCH alerts USING INDEX idx_alerts_patient_status_time (patient_id=? AND status=?)"
+        ],
+        [
+          44,
+          0,
+          0,
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      ],
+      "plan_summary": "SEARCH alerts USING INDEX idx_alerts_patient_status_time (patient_id=? AND status=?) | USE TEMP B-TREE FOR ORDER BY"
+    },
+    {
+      "id": "Q5_MULTI_JOIN",
+      "name": "Multi-Table Relational Join (Alerts + Patients + Doctor Assignments)",
+      "sql": "SELECT a.alert_id, a.patient_id, p.first_name, p.last_name,\n       dp.first_name AS doctor_first_name, dp.last_name AS doctor_last_name,\n       a.severity, a.status, a.created_at\nFROM alerts a\nINNER JOIN patient_profiles p ON a.patient_id = p.patient_id\nLEFT JOIN doctor_patient_assignments dpa ON p.patient_id = dpa.patient_id AND dpa.is_active = 1\nLEFT JOIN doctor_profiles dp ON dpa.doctor_id = dp.doctor_id\nORDER BY a.created_at DESC\nLIMIT 25;",
+      "raw_plan_rows": [
+        [
+          11,
+          0,
+          0,
+          "SCAN a USING INDEX idx_alerts_patient_status_time"
+        ],
+        [
+          14,
+          0,
+          0,
+          "SEARCH p USING INDEX sqlite_autoindex_patient_profiles_1 (patient_id=?)"
+        ],
+        [
+          19,
+          0,
+          0,
+          "SEARCH dpa USING INDEX idx_assignments_patient (patient_id=?) LEFT-JOIN"
+        ],
+        [
+          29,
+          0,
+          0,
+          "SEARCH dp USING INDEX sqlite_autoindex_doctor_profiles_1 (doctor_id=?) LEFT-JOIN"
+        ],
+        [
+          63,
+          0,
+          0,
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      ],
+      "plan_summary": "SCAN a USING INDEX idx_alerts_patient_status_time | SEARCH p USING INDEX sqlite_autoindex_patient_profiles_1 (patient_id=?) | SEARCH dpa USING INDEX idx_assignments_patient (patient_id=?) LEFT-JOIN | SEARCH dp USING INDEX sqlite_autoindex_doctor_profiles_1 (doctor_id=?) LEFT-JOIN | USE TEMP B-TREE FOR ORDER BY"
+    },
+    {
+      "id": "Q6_AGGREGATE_HAVING",
+      "name": "Statistical Aggregation with GROUP BY and HAVING Filter",
+      "sql": "SELECT patient_id,\n       COUNT(*) AS reading_count,\n       ROUND(AVG(value), 2) AS mean_hr,\n       ROUND(MIN(value), 2) AS min_hr,\n       ROUND(MAX(value), 2) AS max_hr\nFROM vitals_readings\nWHERE metric_code = 'heart_rate'\nGROUP BY patient_id\nHAVING COUNT(*) > 5\nORDER BY mean_hr DESC;",
+      "raw_plan_rows": [
+        [
+          8,
+          0,
+          0,
+          "SCAN vitals_readings USING INDEX idx_vitals_patient_metric_time"
+        ],
+        [
+          58,
+          0,
+          0,
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      ],
+      "plan_summary": "SCAN vitals_readings USING INDEX idx_vitals_patient_metric_time | USE TEMP B-TREE FOR ORDER BY"
+    }
+  ],
+  "mongo_execution_plans": {
+    "indexed_query": {
+      "winning_stage": "LIMIT",
+      "input_stage": "FETCH",
+      "index_used": null
+    },
+    "unindexed_query": {
+      "winning_stage": "LIMIT",
+      "index_used": null
+    }
+  },
+  "benchmarks": {
+    "Q1_INDEXED_VITALS": {
+      "name": "Patient-Specific Reading Retrieval with Metric & Temporal Order (Indexed)",
+      "metrics": {
+        "iterations": 50,
+        "min_ms": 0.056,
+        "median_ms": 0.058,
+        "p95_ms": 0.071,
+        "max_ms": 0.154,
+        "mean_ms": 0.061,
+        "stddev_ms": 0.014
+      }
+    },
+    "Q2_UNINDEXED_VITALS": {
+      "name": "Unindexed Field Scan & Sorting (Full Table Scan with Sort Buffer)",
+      "metrics": {
+        "iterations": 50,
+        "min_ms": 0.774,
+        "median_ms": 0.809,
+        "p95_ms": 0.886,
+        "max_ms": 0.98,
+        "mean_ms": 0.82,
+        "stddev_ms": 0.04
+      }
+    },
+    "Q3_TIME_RANGE": {
+      "name": "Patient Time-Range Bounded Observation Retrieval",
+      "metrics": {
+        "iterations": 50,
+        "min_ms": 0.064,
+        "median_ms": 0.067,
+        "p95_ms": 0.081,
+        "max_ms": 0.091,
+        "mean_ms": 0.068,
+        "stddev_ms": 0.005
+      }
+    },
+    "Q4_ALERT_TRIAGE": {
+      "name": "Active Clinical Alert Retrieval by Patient & Status",
+      "metrics": {
+        "iterations": 50,
+        "min_ms": 0.057,
+        "median_ms": 0.06,
+        "p95_ms": 0.066,
+        "max_ms": 0.108,
+        "mean_ms": 0.061,
+        "stddev_ms": 0.007
+      }
+    },
+    "Q5_MULTI_JOIN": {
+      "name": "Multi-Table Relational Join (Alerts + Patients + Doctor Assignments)",
+      "metrics": {
+        "iterations": 50,
+        "min_ms": 0.118,
+        "median_ms": 0.124,
+        "p95_ms": 0.15,
+        "max_ms": 0.153,
+        "mean_ms": 0.127,
+        "stddev_ms": 0.008
+      }
+    },
+    "Q6_AGGREGATE_HAVING": {
+      "name": "Statistical Aggregation with GROUP BY and HAVING Filter",
+      "metrics": {
+        "iterations": 50,
+        "min_ms": 1.972,
+        "median_ms": 2.172,
+        "p95_ms": 2.367,
+        "max_ms": 2.469,
+        "mean_ms": 2.184,
+        "stddev_ms": 0.095
+      }
+    }
+  },
+  "speedup_ratio_indexed_vs_scan": 13.44,
+  "mongodb_count_invariant_verified": true
+}

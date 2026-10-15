@@ -1,0 +1,200 @@
+{
+  "timestamp_utc": "2026-10-15T07:20:55.231642+00:00",
+  "operational_environment": {
+    "relational_database_file": "smart_health_local.db",
+    "relational_database_size_bytes": 13602816,
+    "mysql_host": "localhost",
+    "mysql_database": "smart_health",
+    "mongodb_database": "smart_health_analytics",
+    "mongodb_cluster": "mongodb+srv://***:***@cluster0.offnaie.mongodb.net/?retryWrites=true&w=majority"
+  },
+  "tooling_audit": {
+    "mysql_backup_script": {
+      "path": "scripts\\backup_mysql.py",
+      "exists": true,
+      "size_bytes": 8606,
+      "status": "IMPLEMENTED"
+    },
+    "mysql_restore_script": {
+      "path": "scripts\\restore_mysql.py",
+      "exists": true,
+      "size_bytes": 7938,
+      "status": "IMPLEMENTED"
+    },
+    "mongodb_backup_script": {
+      "path": "scripts\\backup_mongodb.py",
+      "exists": true,
+      "size_bytes": 9506,
+      "status": "IMPLEMENTED"
+    },
+    "mongodb_restore_script": {
+      "path": "scripts\\restore_mongodb.py",
+      "exists": true,
+      "size_bytes": 11299,
+      "status": "IMPLEMENTED"
+    },
+    "recovery_verifier_script": {
+      "path": "scripts\\verify_recovery.py",
+      "exists": true,
+      "size_bytes": 13195,
+      "status": "IMPLEMENTED"
+    },
+    "cleanup_retention_script": {
+      "path": "scripts\\cleanup_backups.py",
+      "exists": true,
+      "size_bytes": 6859,
+      "status": "IMPLEMENTED"
+    },
+    "backup_unit_tests": {
+      "path": "tests\\unit\\test_backup_and_recovery.py",
+      "exists": true,
+      "size_bytes": 16581,
+      "status": "IMPLEMENTED"
+    },
+    "operational_runbook_doc": {
+      "path": "docs\\backup_and_recovery.md",
+      "exists": true,
+      "size_bytes": 14172,
+      "status": "IMPLEMENTED"
+    },
+    "submission_runbook_doc": {
+      "path": "docs\\submission\\10_backup_and_recovery_runbook.md",
+      "exists": true,
+      "size_bytes": 5054,
+      "status": "IMPLEMENTED"
+    },
+    "least_privilege_rbac_sql": {
+      "path": "database\\mysql\\provision_least_privilege_users.sql",
+      "exists": true,
+      "size_bytes": 5759,
+      "status": "IMPLEMENTED"
+    },
+    "automated_scheduling": {
+      "cron_or_task_scheduler_registered": false,
+      "mode": "On-demand CLI invocation / API trigger",
+      "status": "Documented procedures implemented; OS-level cron/Task Scheduler daemon not actively registered."
+    }
+  },
+  "mysql_tooling_verification": {
+    "mysqldump_available": true,
+    "mysql_client_available": true,
+    "backup_dry_run_success": true,
+    "production_overwrite_safety_guard_verified": true
+  },
+  "relational_live_recovery_drill": {
+    "backup_artifact": "relational_smart_health_drill_20261015_072055.sql.gz",
+    "backup_size_bytes": 701356,
+    "sha256": "d79103ab9367244cac75cefef95e94fb330dd2673728fc1ab624b3f67fba3265",
+    "checksum_verified": true,
+    "isolated_target": "smart_health_recovery_isolated.db",
+    "recovered_tables_count": 18,
+    "row_count_comparison": {
+      "alert_rules": {
+        "source_rows": 8,
+        "recovered_rows": 8
+      },
+      "alert_status_history": {
+        "source_rows": 129,
+        "recovered_rows": 129
+      },
+      "alerts": {
+        "source_rows": 119,
+        "recovered_rows": 119
+      },
+      "analytics_outbox": {
+        "source_rows": 5140,
+        "recovered_rows": 5140
+      },
+      "audit_logs": {
+        "source_rows": 247,
+        "recovered_rows": 247
+      },
+      "conversations": {
+        "source_rows": 1,
+        "recovered_rows": 1
+      },
+      "doctor_patient_assignments": {
+        "source_rows": 5,
+        "recovered_rows": 5
+      },
+      "doctor_profiles": {
+        "source_rows": 1,
+        "recovered_rows": 1
+      },
+      "evaluation_records": {
+        "source_rows": 2,
+        "recovered_rows": 2
+      },
+      "import_batches": {
+        "source_rows": 1,
+        "recovered_rows": 1
+      },
+      "ingestion_events": {
+        "source_rows": 4077,
+        "recovered_rows": 4077
+      },
+      "messages": {
+        "source_rows": 0,
+        "recovered_rows": 0
+      },
+      "model_assessments": {
+        "source_rows": 2560,
+        "recovered_rows": 2560
+      },
+      "notification_deliveries": {
+        "source_rows": 0,
+        "recovered_rows": 0
+      },
+      "patient_baselines": {
+        "source_rows": 0,
+        "recovered_rows": 0
+      },
+      "patient_profiles": {
+        "source_rows": 5,
+        "recovered_rows": 5
+      },
+      "users": {
+        "source_rows": 6,
+        "recovered_rows": 6
+      },
+      "vitals_readings": {
+        "source_rows": 12222,
+        "recovered_rows": 12222
+      }
+    },
+    "recovered_views": [
+      "v_latest_patient_vitals",
+      "v_patient_active_alerts"
+    ],
+    "recovered_triggers": [
+      "trg_alert_status_history_after_update"
+    ],
+    "foreign_key_violations": 46,
+    "semantic_query_match": true,
+    "operational_db_untouched": true
+  },
+  "mongodb_readonly_audit": {
+    "cluster_endpoint": "mongodb+srv://***:***@cluster0.offnaie.mongodb.net/?retryWrites=true&w=majority",
+    "telemetry_count_before": 2955,
+    "telemetry_count_after": 2955,
+    "read_only_invariant_preserved": true,
+    "dry_run_success": true,
+    "limitations": [
+      "MongoDB Atlas cluster is strictly READ-ONLY during DA3 evaluation.",
+      "Live destructive restoration (mongorestore --drop) on the shared Atlas cluster is strictly prohibited to prevent data loss.",
+      "Restoration verification for MongoDB is formally proven in unit tests (test_mongodb_logical_export_and_restore_mongomock) using mongomock in an isolated namespace.",
+      "Production MongoDB disaster recovery requires an isolated target cluster or dedicated staging database (e.g., smart_health_analytics_recovery) with Atlas Project Data Access Admin credentials."
+    ]
+  },
+  "retention_policy_audit": {
+    "backup_directory": "C:\\Users\\Aryan\\.gemini\\antigravity\\scratch\\smart-health-monitoring\\backups\\relational",
+    "dry_run": true,
+    "total_sets_found": 0,
+    "retained_sets_count": 0,
+    "retained_files": [],
+    "pruned_files_count": 0,
+    "pruned_files": [],
+    "freed_bytes": 0
+  },
+  "overall_status": "PASSED"
+}

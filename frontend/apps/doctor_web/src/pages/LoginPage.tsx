@@ -104,6 +104,7 @@ export const LoginPage: React.FC = () => {
     });
 
     if (success) {
+      setFixtureMode(false);
       navigate(from, { replace: true });
     } else {
       // Clear password field on failed authentication per clinical security guidelines

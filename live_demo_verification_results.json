@@ -1,0 +1,143 @@
+{
+  "timestamp": "2026-10-15T00:16:14.903854+00:00",
+  "total_tests": 16,
+  "passed_tests": 14,
+  "pass_rate": 0.875,
+  "results": {
+    "Simulator Health Check": {
+      "status": "FAILED",
+      "http_status": 200,
+      "service": "Smartwatch Sensor Telemetry Simulator",
+      "latency_ms": 35.52
+    },
+    "Simulator Patient Configuration": {
+      "status": "VERIFIED PASS",
+      "http_status": 200,
+      "patients": [
+        "P101",
+        "P102",
+        "P103",
+        "P104",
+        "P105"
+      ],
+      "latency_ms": 2.8
+    },
+    "Simulator Latest Readings": {
+      "status": "VERIFIED PASS",
+      "http_status": 200,
+      "readings_count": 5,
+      "sample_p101_hr": 71.8,
+      "sample_p101_spo2": 98.1,
+      "sample_p101_temp": 98.46,
+      "latency_ms": 1.66
+    },
+    "Backend Gateway Health": {
+      "status": "VERIFIED PASS",
+      "http_status": 200,
+      "service": "Smart Health Monitoring System",
+      "latency_ms": 1.32
+    },
+    "Backend Ingestion Worker Status": {
+      "status": "FAILED",
+      "http_status": 200,
+      "pipeline_health": "healthy",
+      "events_accepted": 0,
+      "consecutive_failures": 0,
+      "latency_ms": 4.2
+    },
+    "Clinician Authentication (JWT)": {
+      "status": "VERIFIED PASS",
+      "login_role": "doctor",
+      "http_status": 200,
+      "latency_ms": 203.37
+    },
+    "Clinician Patient Cohort Retrieval": {
+      "status": "VERIFIED PASS",
+      "http_status": 200,
+      "cohort_count": 5,
+      "cohort_ids": [
+        "P101",
+        "P102",
+        "P103",
+        "P104",
+        "P105"
+      ],
+      "latency_ms": 22.68
+    },
+    "Patient Live Vitals Retrieval (REST API)": {
+      "status": "VERIFIED PASS",
+      "patients_verified": 5,
+      "sample_P101_vitals": {
+        "heart_rate": 71.8,
+        "spo2": 98.1,
+        "temperature_f": 98.46,
+        "is_simulated": true,
+        "event_id": "evt_sim_2411_654ea77e"
+      },
+      "sample_P102_vitals": {
+        "heart_rate": 136.3,
+        "spo2": 97.8,
+        "temperature_f": 98.5,
+        "is_simulated": true,
+        "event_id": "evt_sim_2412_19e24532"
+      }
+    },
+    "Database Persistence & Idempotency": {
+      "status": "VERIFIED PASS",
+      "ingestion_events": 3922,
+      "vitals_readings": 11757,
+      "model_assessments": 2415,
+      "alerts": 96,
+      "analytics_outbox": 4850,
+      "vitals_duplicates": 0,
+      "simulated_events_count": 2422
+    },
+    "Alert Generation & Ingestion": {
+      "status": "VERIFIED PASS",
+      "alert_created": true,
+      "target_alert_id": "alt_f29d62d95fdbc435432ef689",
+      "patient_id": "P101",
+      "category": "vital_threshold",
+      "severity": "CRITICAL",
+      "reason": "[CRITICAL] Heart rate exceeds 130 bpm (demonstration threshold for severe tachyc..."
+    },
+    "Alert Acknowledgement Flow": {
+      "status": "VERIFIED PASS",
+      "http_status": 200,
+      "alert_id": "alt_f29d62d95fdbc435432ef689",
+      "alert_status": "ACKNOWLEDGED",
+      "acknowledged_by": "U_DOC_001",
+      "latency_ms": 14.72
+    },
+    "Sensor Disconnection Interruption": {
+      "status": "VERIFIED PASS",
+      "interrupted_patient": "P104",
+      "active_interrupted_list": [
+        "P104"
+      ]
+    },
+    "Sensor Reconnection & Recovery": {
+      "status": "VERIFIED PASS",
+      "resumed_patient": "P104",
+      "remaining_interrupted": []
+    },
+    "MongoDB Atlas Protection (Gated per User Directive)": {
+      "status": "VERIFIED PASS",
+      "pending_outbox_records": 3410,
+      "synced_outbox_records": 0,
+      "protection_status": "ENFORCED (Zero automated writes to Atlas; lossless relational queuing active)"
+    },
+    "React Clinician Web Dashboard": {
+      "status": "VERIFIED PASS",
+      "http_status": 200,
+      "url": "http://127.0.0.1:5173",
+      "latency_ms": 20.26
+    },
+    "Streamlit Analytics Dashboard": {
+      "status": "VERIFIED PASS",
+      "http_status": 200,
+      "url": "http://localhost:8501",
+      "latency_ms": 5.31
+    }
+  }
+}

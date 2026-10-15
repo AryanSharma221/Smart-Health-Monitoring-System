@@ -1,0 +1,478 @@
+{
+  "engine": "SQLite 3 (Production Schema Compatible with MySQL 8 InnoDB)",
+  "database_file": "smart_health_local.db",
+  "captured_at": "2026-10-15T05:39:23.348284+00:00",
+  "operations": {
+    "select_filter_sort": {
+      "sql": "SELECT reading_id, patient_id, metric_code, value, unit, measured_at, quality_status\n       FROM vitals_readings\n       WHERE patient_id = 'P101' AND metric_code = 'heart_rate'\n       ORDER BY measured_at DESC\n       LIMIT 5;",
+      "params": [],
+      "row_count": 5,
+      "execution_time_ms": 0.831,
+      "sample_rows": [
+        {
+          "reading_id": 12160,
+          "patient_id": "P101",
+          "metric_code": "heart_rate",
+          "value": 71.5,
+          "unit": "bpm",
+          "measured_at": "2026-10-15 05:28:27.738984",
+          "quality_status": "valid"
+        },
+        {
+          "reading_id": 12145,
+          "patient_id": "P101",
+          "metric_code": "heart_rate",
+          "value": 71.5,
+          "unit": "bpm",
+          "measured_at": "2026-10-15 05:28:22.496737",
+          "quality_status": "valid"
+        },
+        {
+          "reading_id": 12130,
+          "patient_id": "P101",
+          "metric_code": "heart_rate",
+          "value": 72.1,
+          "unit": "bpm",
+          "measured_at": "2026-10-15 05:28:05.309451",
+          "quality_status": "valid"
+        }
+      ]
+    },
+    "inner_join": {
+      "sql": "SELECT p.patient_id, p.first_name, p.last_name, p.gender,\n              v.metric_code, v.value, v.unit, v.measured_at\n       FROM patient_profiles p\n       INNER JOIN vitals_readings v ON p.patient_id = v.patient_id\n       WHERE p.patient_id = 'P101' AND v.metric_code = 'heart_rate'\n       ORDER BY v.measured_at DESC\n       LIMIT 3;",
+      "params": [],
+      "row_count": 3,
+      "execution_time_ms": 0.099,
+      "sample_rows": [
+        {
+          "patient_id": "P101",
+          "first_name": "Kaggle",
+          "last_name": "Patient P101",
+          "gender": "unknown",
+          "metric_code": "heart_rate",
+          "value": 71.5,
+          "unit": "bpm",
+          "measured_at": "2026-10-15 05:28:27.738984"
+        },
+        {
+          "patient_id": "P101",
+          "first_name": "Kaggle",
+          "last_name": "Patient P101",
+          "gender": "unknown",
+          "metric_code": "heart_rate",
+          "value": 71.5,
+          "unit": "bpm",
+          "measured_at": "2026-10-15 05:28:22.496737"
+        },
+        {
+          "patient_id": "P101",
+          "first_name": "Kaggle",
+          "last_name": "Patient P101",
+          "gender": "unknown",
+          "metric_code": "heart_rate",
+          "value": 72.1,
+          "unit": "bpm",
+          "measured_at": "2026-10-15 05:28:05.309451"
+        }
+      ]
+    },
+    "multi_table_join": {
+      "sql": "SELECT a.alert_id, a.patient_id, p.first_name, p.last_name,\n              dpa.doctor_id, a.severity, a.status, a.reason, a.created_at\n       FROM alerts a\n       INNER JOIN patient_profiles p ON a.patient_id = p.patient_id\n       LEFT JOIN doctor_patient_assignments dpa ON p.patient_id = dpa.patient_id AND dpa.is_active = 1\n       WHERE a.patient_id = 'P101'\n       ORDER BY a.created_at DESC\n       LIMIT 3;",
+      "params": [],
+      "row_count": 3,
+      "execution_time_ms": 0.279,
+      "sample_rows": [
+        {
+          "alert_id": "ALT_a03904d1ad",
+          "patient_id": "P101",
+          "first_name": "Kaggle",
+          "last_name": "Patient P101",
+          "doctor_id": "DOC_001",
+          "severity": "CRITICAL",
+          "status": "NEW",
+          "reason": "Tachycardia Alert: Heart rate reached 138.0 bpm (>120 bpm threshold)",
+          "created_at": "2026-10-15 05:25:56.989174"
+        },
+        {
+          "alert_id": "ALT_588cdfa5e0",
+          "patient_id": "P101",
+          "first_name": "Kaggle",
+          "last_name": "Patient P101",
+          "doctor_id": "DOC_001",
+          "severity": "CRITICAL",
+          "status": "NEW",
+          "reason": "Tachycardia Alert: Heart rate reached 138.0 bpm (>120 bpm threshold)",
+          "created_at": "2026-10-15 02:47:24.801069"
+        },
+        {
+          "alert_id": "ALT_cf745ac897",
+          "patient_id": "P101",
+          "first_name": "Kaggle",
+          "last_name": "Patient P101",
+          "doctor_id": "DOC_001",
+          "severity": "CRITICAL",
+          "status": "NEW",
+          "reason": "Tachycardia Alert: Heart rate reached 138.0 bpm (>120 bpm threshold)",
+          "created_at": "2026-10-15 02:45:00.400712"
+        }
+      ]
+    },
+    "cte_window_subquery": {
+      "sql": "WITH ranked_vitals AS (\n           SELECT reading_id, patient_id, metric_code, value, unit, measured_at,\n                  ROW_NUMBER() OVER (PARTITION BY metric_code ORDER BY measured_at DESC) AS rn\n           FROM vitals_readings\n           WHERE patient_id = 'P101'\n       )\n       SELECT reading_id, patient_id, metric_code, value, unit, measured_at\n       FROM ranked_vitals\n       WHERE rn = 1\n       ORDER BY metric_code;",
+      "params": [],
+      "row_count": 3,
+      "execution_time_ms": 3.98,
+      "sample_rows": [
+        {
+          "reading_id": 12160,
+          "patient_id": "P101",
+          "metric_code": "heart_rate",
+          "value": 71.5,
+          "unit": "bpm",
+          "measured_at": "2026-10-15 05:28:27.738984"
+        },
+        {
+          "reading_id": 12161,
+          "patient_id": "P101",
+          "metric_code": "spo2",
+          "value": 98.3,
+          "unit": "%",
+          "measured_at": "2026-10-15 05:28:27.738984"
+        },
+        {
+          "reading_id": 12162,
+          "patient_id": "P101",
+          "metric_code": "temperature",
+          "value": 36.83,
+          "unit": "degC",
+          "measured_at": "2026-10-15 05:28:27.738984"
+        }
+      ]
+    },
+    "scalar_nested_subquery": {
+      "sql": "SELECT reading_id, patient_id, metric_code, value, unit, measured_at\n       FROM vitals_readings\n       WHERE patient_id = 'P101' AND metric_code = 'heart_rate'\n         AND value > (SELECT AVG(value) FROM vitals_readings WHERE patient_id = 'P101' AND metric_code = 'heart_rate')\n       ORDER BY value DESC\n       LIMIT 3;",
+      "params": [],
+      "row_count": 3,
+      "execution_time_ms": 0.5,
+      "sample_rows": [
+        {
+          "reading_id": 11116,
+          "patient_id": "P101",
+          "metric_code": "heart_rate",
+          "value": 142.5,
+          "unit": "bpm",
+          "measured_at": "2026-10-14 22:32:34.492670"
+        },
+        {
+          "reading_id": 11122,
+          "patient_id": "P101",
+          "metric_code": "heart_rate",
+          "value": 142.5,
+          "unit": "bpm",
+          "measured_at": "2026-10-14 22:33:11.659871"
+        },
+        {
+          "reading_id": 11863,
+          "patient_id": "P101",
+          "metric_code": "heart_rate",
+          "value": 138,
+          "unit": "bpm",
+          "measured_at": "2026-10-15 00:44:24.374260"
+        }
+      ]
+    },
+    "aggregate_moments": {
+      "sql": "SELECT metric_code,\n              COUNT(*) AS total_samples,\n              ROUND(AVG(value), 2) AS mean_value,\n              ROUND(MIN(value), 2) AS min_value,\n              ROUND(MAX(value), 2) AS max_value\n       FROM vitals_readings\n       WHERE patient_id = 'P101'\n       GROUP BY metric_code\n       ORDER BY metric_code;",
+      "params": [],
+      "row_count": 3,
+      "execution_time_ms": 0.305,
+      "sample_rows": [
+        {
+          "metric_code": "heart_rate",
+          "total_samples": 815,
+          "mean_value": 80.33,
+          "min_value": 60.0,
+          "max_value": 142.5
+        },
+        {
+          "metric_code": "spo2",
+          "total_samples": 815,
+          "mean_value": 97.35,
+          "min_value": 83.3,
+          "max_value": 99.9
+        },
+        {
+          "metric_code": "temperature",
+          "total_samples": 815,
+          "mean_value": 37.67,
+          "min_value": 36.39,
+          "max_value": 100.8
+        }
+      ]
+    },
+    "group_by_having": {
+      "sql": "SELECT patient_id,\n              COUNT(*) AS sample_count,\n              ROUND(AVG(value), 2) AS avg_heart_rate,\n              MIN(value) AS min_hr,\n              MAX(value) AS max_hr\n       FROM vitals_readings\n       WHERE metric_code = 'heart_rate'\n       GROUP BY patient_id\n       HAVING COUNT(*) > 5\n       ORDER BY avg_heart_rate DESC;",
+      "params": [],
+      "row_count": 5,
+      "execution_time_ms": 2.139,
+      "sample_rows": [
+        {
+          "patient_id": "P104",
+          "sample_count": 834,
+          "avg_heart_rate": 84.1,
+          "min_hr": 60,
+          "max_hr": 134
+        },
+        {
+          "patient_id": "P101",
+          "sample_count": 815,
+          "avg_heart_rate": 80.33,
+          "min_hr": 60,
+          "max_hr": 142.5
+        },
+        {
+          "patient_id": "P102",
+          "sample_count": 811,
+          "avg_heart_rate": 79.86,
+          "min_hr": 60,
+          "max_hr": 138.2
+        }
+      ]
+    },
+    "view_v_latest_patient_vitals": {
+      "sql": "SELECT * FROM v_latest_patient_vitals WHERE patient_id = 'P101';",
+      "params": [],
+      "row_count": 3,
+      "execution_time_ms": 0.654,
+      "sample_rows": [
+        {
+          "reading_id": 12160,
+          "event_id": "evt_sim_2541_c240ec84",
+          "patient_id": "P101",
+          "metric_code": "heart_rate",
+          "value": 71.5,
+          "unit": "bpm",
+          "raw_value": 71.5,
+          "raw_unit": "bpm",
+          "quality_status": "valid",
+          "measured_at": "2026-10-15 05:28:27.738984"
+        },
+        {
+          "reading_id": 12161,
+          "event_id": "evt_sim_2541_c240ec84",
+          "patient_id": "P101",
+          "metric_code": "spo2",
+          "value": 98.3,
+          "unit": "%",
+          "raw_value": 98.3,
+          "raw_unit": "%",
+          "quality_status": "valid",
+          "measured_at": "2026-10-15 05:28:27.738984"
+        },
+        {
+          "reading_id": 12162,
+          "event_id": "evt_sim_2541_c240ec84",
+          "patient_id": "P101",
+          "metric_code": "temperature",
+          "value": 36.83,
+          "unit": "degC",
+          "raw_value": 98.3,
+          "raw_unit": "degF",
+          "quality_status": "valid",
+          "measured_at": "2026-10-15 05:28:27.738984"
+        }
+      ]
+    },
+    "view_v_patient_active_alerts": {
+      "sql": "SELECT * FROM v_patient_active_alerts WHERE patient_id = 'P101' LIMIT 3;",
+      "params": [],
+      "row_count": 3,
+      "execution_time_ms": 0.208,
+      "sample_rows": [
+        {
+          "alert_id": "alt_ml_vt_sim_1426_8416ca11",
+          "patient_id": "P101",
+          "patient_first_name": "Kaggle",
+          "patient_last_name": "Patient P101",
+          "doctor_id": "DOC_001",
+          "severity": "HIGH",
+          "category": "ml_anomaly",
+          "reason": "[HIGH] ML Anomaly Detected (Score: 0.56). Temperature metric (temp_trend_slope) measured -2557.53 F vs historical baseline median of 0.0 F (+1485.4x MAD).; SpO2 metric (spo2_trend_slope) measured -4650.05% vs historical baseline median of 0.0% (+911.0x MAD).",
+          "status": "ACKNOWLEDGED",
+          "created_at": "2026-10-14 20:27:33"
+        },
+        {
+          "alert_id": "alt_ml_vt_sim_1431_c6273e6b",
+          "patient_id": "P101",
+          "patient_first_name": "Kaggle",
+          "patient_last_name": "Patient P101",
+          "doctor_id": "DOC_001",
+          "severity": "HIGH",
+          "category": "ml_anomaly",
+          "reason": "[HIGH] ML Anomaly Detected (Score: 0.59). Temperature metric (temp_trend_slope) measured 186.6 F vs historical baseline median of 0.0 F (+108.4x MAD).; SpO2 metric (spo2_trend_slope) measured 287.07% vs historical baseline median of 0.0% (+56.2x MAD).",
+          "status": "ACKNOWLEDGED",
+          "created_at": "2026-10-14 20:27:39"
+        },
+        {
+          "alert_id": "alt_ml_vt_sim_1436_72a3d482",
+          "patient_id": "P101",
+          "patient_first_name": "Kaggle",
+          "patient_last_name": "Patient P101",
+          "doctor_id": "DOC_001",
+          "severity": "HIGH",
+          "category": "ml_anomaly",
+          "reason": "[HIGH] ML Anomaly Detected (Score: 0.56). Temperature metric (temp_trend_slope) measured -129.29 F vs historical baseline median of 0.0 F (+75.1x MAD).; SpO2 metric (spo2_trend_slope) measured 287.32% vs historical baseline median of 0.0% (+56.3x MAD).",
+          "status": "ACKNOWLEDGED",
+          "created_at": "2026-10-14 20:27:40"
+        }
+      ]
+    },
+    "index_inspection": {
+      "sql": "PRAGMA index_list('vitals_readings');",
+      "params": [],
+      "row_count": 5,
+      "execution_time_ms": 0.064,
+      "sample_rows": [
+        {
+          "seq": 0,
+          "name": "ix_vitals_readings_event_id",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 1,
+          "name": "ix_vitals_readings_patient_id",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        },
+        {
+          "seq": 2,
+          "name": "idx_vitals_measured_at",
+          "unique": 0,
+          "origin": "c",
+          "partial": 0
+        }
+      ]
+    },
+    "explain_query_plan": {
+      "sql": "EXPLAIN QUERY PLAN\n       SELECT reading_id, value, measured_at\n       FROM vitals_readings\n       WHERE patient_id = 'P101' AND metric_code = 'heart_rate'\n       ORDER BY measured_at DESC;",
+      "params": [],
+      "row_count": 1,
+      "execution_time_ms": 0.027,
+      "sample_rows": [
+        {
+          "id": 4,
+          "parent": 0,
+          "notused": 0,
+          "detail": "SEARCH vitals_readings USING INDEX idx_vitals_patient_metric_time (patient_id=? AND metric_code=?)"
+        }
+      ]
+    },
+    "crud_insert": {
+      "sql": "INSERT INTO evaluation_records (record_id, patient_id, record_type, title, content_text, status, created_by, created_at, updated_at)\n       VALUES (?, 'P101', 'clinical_note', 'Evidence Capture Note', 'Automated evidence capture execution note.', 'ACTIVE', 'eval_script', datetime('now'), datetime('now'));",
+      "params": [
+        "EVAL_EV_1792042763"
+      ],
+      "rows_affected": 1,
+      "execution_time_ms": 2.073
+    },
+    "crud_select_after_insert": {
+      "sql": "SELECT record_id, patient_id, title, status FROM evaluation_records WHERE record_id = ?;",
+      "params": [
+        "EVAL_EV_1792042763"
+      ],
+      "row_count": 1,
+      "execution_time_ms": 0.116,
+      "sample_rows": [
+        {
+          "record_id": "EVAL_EV_1792042763",
+          "patient_id": "P101",
+          "title": "Evidence Capture Note",
+          "status": "ACTIVE"
+        }
+      ]
+    },
+    "crud_update": {
+      "sql": "UPDATE evaluation_records SET title = 'Evidence Capture Note - UPDATED', status = 'VERIFIED' WHERE record_id = ?;",
+      "params": [
+        "EVAL_EV_1792042763"
+      ],
+      "rows_affected": 1,
+      "execution_time_ms": 0.559
+    },
+    "crud_select_after_update": {
+      "sql": "SELECT record_id, patient_id, title, status FROM evaluation_records WHERE record_id = ?;",
+      "params": [
+        "EVAL_EV_1792042763"
+      ],
+      "row_count": 1,
+      "execution_time_ms": 0.094,
+      "sample_rows": [
+        {
+          "record_id": "EVAL_EV_1792042763",
+          "patient_id": "P101",
+          "title": "Evidence Capture Note - UPDATED",
+          "status": "VERIFIED"
+        }
+      ]
+    },
+    "crud_delete": {
+      "sql": "DELETE FROM evaluation_records WHERE record_id = ?;",
+      "params": [
+        "EVAL_EV_1792042763"
+      ],
+      "rows_affected": 1,
+      "execution_time_ms": 0.54
+    },
+    "crud_select_after_delete": {
+      "sql": "SELECT record_id FROM evaluation_records WHERE record_id = ?;",
+      "params": [
+        "EVAL_EV_1792042763"
+      ],
+      "row_count": 0,
+      "execution_time_ms": 0.095,
+      "sample_rows": []
+    },
+    "trigger_verification": {
+      "sql": "SELECT history_id, alert_id, old_status, new_status, changed_at, note \n           FROM alert_status_history \n           WHERE alert_id = ? \n           ORDER BY changed_at DESC LIMIT 1;",
+      "params": [
+        "alt_ml_vt_sim_1321_429fb583"
+      ],
+      "row_count": 1,
+      "execution_time_ms": 0.126,
+      "sample_rows": [
+        {
+          "history_id": 127,
+          "alert_id": "alt_ml_vt_sim_1321_429fb583",
+          "old_status": "NEW",
+          "new_status": "ACKNOWLEDGED",
+          "changed_at": "2026-10-15 05:39:23",
+          "note": "Trigger recorded transition"
+        }
+      ]
+    },
+    "stored_function_bmi": {
+      "status_code": 200,
+      "response": {
+        "weight_kg": 70.0,
+        "height_cm": 175.0,
+        "bmi": 22.86,
+        "category": "NORMAL_WEIGHT",
+        "formula_used": "fn_calculate_bmi(weight_kg, height_cm) = weight_kg / (height_cm / 100)^2"
+      },
+      "latency_ms": 21.14
+    },
+    "stored_function_fever": {
+      "status_code": 200,
+      "response": {
+        "temperature_f": 102.5,
+        "temperature_c": 39.17,
+        "fever_category": "MODERATE_FEVER",
+        "clinical_action": "Antipyretic therapy evaluation; clinical notification."
+      },
+      "latency_ms": 2.08
+    }
+  }
+}

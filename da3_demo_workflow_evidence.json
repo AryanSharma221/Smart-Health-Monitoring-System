@@ -1,0 +1,273 @@
+{
+  "report_id": "workflow-eval-1792045840",
+  "timestamp_utc": "2026-10-15T06:30:40.574819+00:00",
+  "total_duration_ms": 3885.16,
+  "overall_status": "PASSED",
+  "summary": {
+    "total_steps": 12,
+    "passed_steps": 12,
+    "failed_steps": 0,
+    "pass_rate_percent": 100.0
+  },
+  "invariants": {
+    "mongodb_read_only_enforced": true,
+    "mongodb_initial_doc_count": 2955,
+    "mongodb_final_doc_count": 2955,
+    "mongodb_writes_detected": 0,
+    "mongodb_status": "COMPLIANT_READ_ONLY",
+    "mysql_baseline_ehr_guard": "PROTECTED_IMMUTABLE"
+  },
+  "steps": [
+    {
+      "step": 1,
+      "name": "Backend Startup and Health Probe",
+      "requirement": "Verify FastAPI gateway and relational database connectivity probe",
+      "status": "PASS",
+      "duration_ms": 109.94,
+      "details": "Gateway HTTP 200 in 18.5ms (version 3.0.0). Database status: connected",
+      "evidence": {
+        "health": {
+          "status": "healthy",
+          "service": "Smart Health Monitoring System",
+          "version": "3.0.0",
+          "environment": "development",
+          "is_simulated": true,
+          "notice": "SIMULATED DATA \u2014 NOT FOR MEDICAL USE"
+        },
+        "ready": {
+          "status": "ready",
+          "database": "connected",
+          "mongodb_mirror": "connected",
+          "simulator_ingestion": "streaming",
+          "message": "Authoritative database operational. Ready to serve traffic."
+        }
+      }
+    },
+    {
+      "step": 2,
+      "name": "Dashboard Connectivity",
+      "requirement": "Verify Reachability of React Workstation (:5173) and Streamlit Visualizer (:8501)",
+      "status": "PASS",
+      "duration_ms": 22.23,
+      "details": "React UI HTTP 200 (2.4ms) | Streamlit HTTP 200 (19.8ms)",
+      "evidence": {
+        "react_status": 200,
+        "streamlit_status": 200
+      }
+    },
+    {
+      "step": 3,
+      "name": "MySQL Evaluation-Record CRUD & Immutability Guard",
+      "requirement": "Execute full CRUD lifecycle on EVAL_* record and verify core patient P001 deletion rejected (403)",
+      "status": "PASS",
+      "duration_ms": 123.27,
+      "details": "Created EVAL_NOTE_79EEC137: 201, Read: 200, Update: 200, Delete: 200, Verify 404: 404, Core Delete Guard: 403",
+      "evidence": {
+        "guard_response": {
+          "detail": "Security & Clinical Safety Violation: The delete operation is strictly restricted to isolated test records prefixed with 'EVAL_'. Core EHR data is immutable."
+        },
+        "crud_deleted": {
+          "deleted": true,
+          "record_id": "EVAL_NOTE_79EEC137",
+          "message": "Evaluation record 'EVAL_NOTE_79EEC137' permanently deleted with audit trail."
+        }
+      }
+    },
+    {
+      "step": 4,
+      "name": "SQL Demonstration Queries & EXPLAIN Plan Comparison",
+      "requirement": "Execute 5 named SQL queries with real joins/aggregations and verify B-Tree index scan plan",
+      "status": "PASS",
+      "duration_ms": 75.68,
+      "details": "5 Queries executed successfully. EXPLAIN Plan index: idx_vitals_patient_metric_time",
+      "evidence": {
+        "queries": {
+          "basic_filter": {
+            "status": 200,
+            "row_count": 10,
+            "ms": 16.06
+          },
+          "inner_join": {
+            "status": 200,
+            "row_count": 10,
+            "ms": 2.94
+          },
+          "multi_join": {
+            "status": 200,
+            "row_count": 10,
+            "ms": 3.06
+          },
+          "nested_subquery": {
+            "status": 200,
+            "row_count": 3,
+            "ms": 27.88
+          },
+          "aggregate_moments": {
+            "status": 200,
+            "row_count": 3,
+            "ms": 4.32
+          }
+        },
+        "explain_scan": "SEARCH USING INDEX (idx_vitals_patient_metric_time)"
+      }
+    },
+    {
+      "step": 5,
+      "name": "Read-Only MongoDB Queries & Live Atlas Inspection",
+      "requirement": "Query live Atlas collection (2,955 docs) with read-only aggregation and verify write isolation",
+      "status": "PASS",
+      "duration_ms": 659.49,
+      "details": "Atlas Status: HTTP 200 (Read-Only: True). Aggregate: 1 results in 195.1ms",
+      "evidence": {
+        "is_read_only": true,
+        "cloud_host": "mongodb+srv://***:***@cluster0.offnaie.mongodb.net/?retryWrites=true&w=majority",
+        "aggregate_results_count": 1
+      }
+    },
+    {
+      "step": 6,
+      "name": "Security & Invalid-Input Handling",
+      "requirement": "Verify 7 security probes covering 200 OK, 401 Unauthenticated, 403 Forbidden, 409 Conflict, 422 Validation Error",
+      "status": "PASS",
+      "duration_ms": 45.02,
+      "details": "All 7 reproducible security probes passed with exact expected HTTP status codes and sanitized responses.",
+      "evidence": {
+        "authorized_read": {
+          "expected": 200,
+          "actual": 200,
+          "outcome": "PERMITTED"
+        },
+        "denied_unassigned_patient": {
+          "expected": 403,
+          "actual": 403,
+          "outcome": "DENIED"
+        },
+        "denied_baseline_delete": {
+          "expected": 403,
+          "actual": 403,
+          "outcome": "DENIED"
+        },
+        "invalid_reading_range": {
+          "expected": 422,
+          "actual": 422,
+          "outcome": "VALIDATION_FAILED"
+        },
+        "duplicate_event_rejection": {
+          "expected": 409,
+          "actual": 409,
+          "outcome": "CONFLICT_HANDLED"
+        },
+        "missing_record_lookup": {
+          "expected": 404,
+          "actual": 404,
+          "outcome": "NOT_FOUND"
+        },
+        "unauthenticated_request": {
+          "expected": 401,
+          "actual": 401,
+          "outcome": "DENIED"
+        }
+      }
+    },
+    {
+      "step": 7,
+      "name": "ML Inference & Alert Rule Behavior",
+      "requirement": "Inject acute telemetry (HR=138 bpm), verify clinical rule triggers alert and updates v_patient_active_alerts",
+      "status": "PASS",
+      "duration_ms": 17.44,
+      "details": "Ingestion: HTTP 201. Alert created: True. View active alerts: 25 rows",
+      "evidence": {
+        "injection": {
+          "event_id": "EVAL_EVT_7E66D13A0C16",
+          "patient_id": "P101",
+          "outcome": "accepted",
+          "measured_at": "2026-10-15T06:30:39.984536Z",
+          "vitals_created": 3,
+          "alert_created": true,
+          "alert_detail": "Tachycardia Alert: Heart rate reached 138.0 bpm (>120 bpm threshold)",
+          "outbox_staged": true
+        },
+        "alert_count": 25
+      }
+    },
+    {
+      "step": 8,
+      "name": "Simulator Start Lifecycle",
+      "requirement": "Send POST /api/v1/simulator/start and verify is_running: True, state: RUNNING",
+      "status": "PASS",
+      "duration_ms": 4.05,
+      "details": "HTTP 200 in 2.1ms (is_running: True)",
+      "evidence": {
+        "message": "Smartwatch telemetry background generation started successfully.",
+        "is_running": true,
+        "lifecycle_state": "RUNNING",
+        "timestamp_utc": "2026-10-15T06:30:40.002244Z",
+        "interrupted_patients": null
+      }
+    },
+    {
+      "step": 9,
+      "name": "Simulator Stop Lifecycle",
+      "requirement": "Send POST /api/v1/simulator/stop and verify is_running: False, state: STOPPED",
+      "status": "PASS",
+      "duration_ms": 3.77,
+      "details": "HTTP 200 in 1.9ms (is_running: False)",
+      "evidence": {
+        "message": "Smartwatch telemetry generator stopped gracefully.",
+        "is_running": false,
+        "lifecycle_state": "STOPPED",
+        "timestamp_utc": "2026-10-15T06:30:40.007012Z",
+        "interrupted_patients": null
+      }
+    },
+    {
+      "step": 10,
+      "name": "Continued Normal Application Use After Stop",
+      "requirement": "Verify core health endpoints, CRUD records, and patient vitals views remain fully responsive while simulator is STOPPED",
+      "status": "PASS",
+      "duration_ms": 57.73,
+      "details": "Gateway Health: 200, CRUD records: 200 (2 records), Latest vitals: 200",
+      "evidence": {
+        "health_status": 200,
+        "crud_count": 2
+      }
+    },
+    {
+      "step": 11,
+      "name": "Simulator Resume Lifecycle",
+      "requirement": "Resume continuous telemetry generation without server restart, then restore clean stopped state",
+      "status": "PASS",
+      "duration_ms": 15.97,
+      "details": "Resume: HTTP 200 (is_running: True). Restored stopped state: HTTP 200 (1.7ms)",
+      "evidence": {
+        "resumption": {
+          "message": "Smartwatch telemetry background generation started successfully.",
+          "is_running": true,
+          "lifecycle_state": "RUNNING",
+          "timestamp_utc": "2026-10-15T06:30:40.079815Z",
+          "interrupted_patients": null
+        },
+        "post_cleanup_stop": {
+          "message": "Smartwatch telemetry generator stopped gracefully.",
+          "is_running": false,
+          "lifecycle_state": "STOPPED",
+          "timestamp_utc": "2026-10-15T06:30:40.083702Z",
+          "interrupted_patients": null
+        }
+      }
+    },
+    {
+      "step": 12,
+      "name": "Frontend Build & Regression Tests",
+      "requirement": "Verify 28/28 frontend assertions pass and production artifact dist/index.html is compiled",
+      "status": "PASS",
+      "duration_ms": 357.56,
+      "details": "Frontend tests: 28/28 passed in 357.6ms. Production bundle verified: True",
+      "evidence": {
+        "test_exit_code": 0,
+        "bundle_present": true,
+        "summary_line": "pass 28"
+      }
+    }
+  ]
+}

@@ -39,6 +39,8 @@ export interface DashboardPatientRow {
   openAlertsCount: number;
   feedFreshness: FreshnessState;
   mostRecentMeasurementTime: string | null;
+  isSimulated?: boolean;
+  provenanceLabel?: string;
 }
 
 export interface DashboardOperationalSummary {
@@ -123,6 +125,9 @@ export async function fetchPatientRows(useFixtures: boolean): Promise<DashboardP
       const feedFreshness = deriveFeedFreshness(fix.latestVitals);
       const mostRecentMeasurementTime = resolveLatestMeasurementTime(fix.latestVitals);
 
+      const isSimulated = fix.latestVitals.some((v) => v.isSimulated);
+      const provenanceLabel = isSimulated ? 'SIMULATED DEMO DATA' : 'HISTORICAL DATASET';
+
       return {
         patient: fix.patient,
         latestVitals: fix.latestVitals,
@@ -130,6 +135,8 @@ export async function fetchPatientRows(useFixtures: boolean): Promise<DashboardP
         openAlertsCount,
         feedFreshness,
         mostRecentMeasurementTime,
+        isSimulated,
+        provenanceLabel,
       };
     });
   }
@@ -181,6 +188,10 @@ export async function fetchPatientRows(useFixtures: boolean): Promise<DashboardP
     const openAlertsCount = pAlerts.filter((a) => a.status === 'open').length;
     const feedFreshness = deriveFeedFreshness(vInfo.vitals, vInfo.error);
     const mostRecentMeasurementTime = resolveLatestMeasurementTime(vInfo.vitals);
+    const isSimulated = vInfo.vitals.some((v) => v.isSimulated);
+    const provenanceLabel = isSimulated
+      ? 'SIMULATED DEMO DATA'
+      : (vInfo.vitals.length > 0 ? 'HISTORICAL DATASET' : 'NO TELEMETRY');
 
     return {
       patient,
@@ -191,6 +202,8 @@ export async function fetchPatientRows(useFixtures: boolean): Promise<DashboardP
       openAlertsCount,
       feedFreshness,
       mostRecentMeasurementTime,
+      isSimulated,
+      provenanceLabel,
     };
   });
 }
@@ -203,6 +216,8 @@ export function buildFixtureOverviewData(currentUser?: UserSession | null): Dash
     const openAlertsCount = fix.alerts.filter((a) => a.status === 'open').length;
     const feedFreshness = deriveFeedFreshness(fix.latestVitals);
     const mostRecentMeasurementTime = resolveLatestMeasurementTime(fix.latestVitals);
+    const isSimulated = fix.latestVitals.some((v) => v.isSimulated);
+    const provenanceLabel = isSimulated ? 'SIMULATED DEMO DATA' : 'HISTORICAL DATASET';
 
     return {
       patient: fix.patient,
@@ -211,6 +226,8 @@ export function buildFixtureOverviewData(currentUser?: UserSession | null): Dash
       openAlertsCount,
       feedFreshness,
       mostRecentMeasurementTime,
+      isSimulated,
+      provenanceLabel,
     };
   });
 

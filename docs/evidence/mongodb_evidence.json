@@ -1,0 +1,321 @@
+{
+  "connectivity": true,
+  "connection_status": "connected",
+  "cloud_host_redacted": "mongodb+srv://***:***@cluster0.offnaie.mongodb.net/?retryWrites=true&w=majority",
+  "database": "smart_health_analytics",
+  "captured_at": "2026-10-15T05:39:24.281159+00:00",
+  "operations": {
+    "document_count_invariant": {
+      "collection": "telemetry_events",
+      "count": 2955,
+      "invariant_preserved": true
+    },
+    "filtered_retrieval": {
+      "event_id": "evt_partial_1",
+      "patient_id": "P101",
+      "measured_at": "2026-10-15T02:00:00",
+      "source": "smartwatch_simulator",
+      "metrics": {
+        "heart_rate": 78.0,
+        "spo2": 98.0,
+        "temperature_f": 98.6,
+        "temperature_c": 37.0
+      }
+    },
+    "sorting_pagination": {
+      "limit": 2,
+      "returned_count": 2,
+      "docs": [
+        {
+          "event_id": "evt_partial_1",
+          "patient_id": "P101",
+          "measured_at": "2026-10-15T02:00:00",
+          "received_at": "2026-10-14 20:50:52.249000",
+          "source": "smartwatch_simulator",
+          "source_event_id": "evt_partial_1",
+          "is_simulated": true,
+          "metrics": {
+            "heart_rate": 78.0,
+            "spo2": 98.0,
+            "temperature_f": 98.6,
+            "temperature_c": 37.0
+          },
+          "readings_summary": [
+            {
+              "metric_code": "heart_rate",
+              "value": 78.0,
+              "unit": "bpm",
+              "raw_value": 78.0,
+              "raw_unit": "bpm",
+              "quality_status": "valid"
+            },
+            {
+              "metric_code": "spo2",
+              "value": 98.0,
+              "unit": "%",
+              "raw_value": 98.0,
+              "raw_unit": "%",
+              "quality_status": "valid"
+            },
+            {
+              "metric_code": "temperature",
+              "value": 37.0,
+              "unit": "degC",
+              "raw_value": 98.6,
+              "raw_unit": "degF",
+              "quality_status": "valid"
+            }
+          ],
+          "mirrored_at": "2026-10-14 20:50:52.253000",
+          "schema_version": 1
+        },
+        {
+          "event_id": "evt_sim_prior_99",
+          "patient_id": "P101",
+          "measured_at": "2026-10-15T01:00:00",
+          "received_at": "2026-10-14 20:50:47.779000",
+          "source": "smartwatch_simulator",
+          "source_event_id": "evt_sim_prior_99",
+          "is_simulated": true,
+          "metrics": {
+            "heart_rate": 72.0,
+            "spo2": 98.0,
+            "temperature_f": 98.4,
+            "temperature_c": 36.89
+          },
+          "readings_summary": [
+            {
+              "metric_code": "heart_rate",
+              "value": 72.0,
+              "unit": "bpm",
+              "raw_value": 72.0,
+              "raw_unit": "bpm",
+              "quality_status": "valid"
+            },
+            {
+              "metric_code": "spo2",
+              "value": 98.0,
+              "unit": "%",
+              "raw_value": 98.0,
+              "raw_unit": "%",
+              "quality_status": "valid"
+            },
+            {
+              "metric_code": "temperature",
+              "value": 36.89,
+              "unit": "degC",
+              "raw_value": 98.4,
+              "raw_unit": "degF",
+              "quality_status": "valid"
+            }
+          ],
+          "mirrored_at": "2026-10-14 20:50:47.781000",
+          "schema_version": 1
+        }
+      ]
+    },
+    "aggregation_pipeline": {
+      "pipeline_name": "patient_vitals_summary",
+      "execution_time_ms": 75.35,
+      "results": [
+        {
+          "_id": "P101",
+          "total_events": 586,
+          "avg_heart_rate": 80.0,
+          "min_heart_rate": 60.0,
+          "max_heart_rate": 137.4,
+          "avg_spo2": 97.06
+        }
+      ]
+    },
+    "registered_indexes": [
+      {
+        "name": "_id_",
+        "key": [
+          [
+            "_id",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "idx_telemetry_patient_measured",
+        "key": [
+          [
+            "patient_id",
+            1
+          ],
+          [
+            "measured_at",
+            -1
+          ]
+        ]
+      },
+      {
+        "name": "idx_telemetry_measured_at",
+        "key": [
+          [
+            "measured_at",
+            -1
+          ]
+        ]
+      },
+      {
+        "name": "idx_telemetry_source",
+        "key": [
+          [
+            "source",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "idx_telemetry_simulated",
+        "key": [
+          [
+            "is_simulated",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "idx_telemetry_source_event_id",
+        "key": [
+          [
+            "source_event_id",
+            1
+          ]
+        ]
+      }
+    ],
+    "explain_plan": {
+      "status_code": 200,
+      "latency_ms": 155.12,
+      "response": {
+        "collection_name": "telemetry_events",
+        "query_type": "indexed",
+        "query_filter": {
+          "patient_id": "P101"
+        },
+        "winning_stage": "IXSCAN",
+        "index_used": "idx_telemetry_patient_measured",
+        "execution_time_ms": 67.83,
+        "total_docs_examined": 10,
+        "total_keys_examined": 10,
+        "docs_returned": 10,
+        "analysis": "INDEXED COVERING SCAN (IXSCAN): Query planner utilizes composite B-Tree index 'idx_telemetry_patient_measured' (patient_id: 1, measured_at: -1). The engine performs an IXSCAN stage bounded by [\"P101\", \"P101\"] followed by FETCH, examining exactly 10 keys and 10 documents rather than scanning the entire collection.",
+        "raw_plan": {
+          "winningPlan": {
+            "isCached": false,
+            "stage": "LIMIT",
+            "limitAmount": 10,
+            "inputStage": {
+              "stage": "FETCH",
+              "inputStage": {
+                "stage": "IXSCAN",
+                "keyPattern": {
+                  "patient_id": 1,
+                  "measured_at": -1
+                },
+                "indexName": "idx_telemetry_patient_measured",
+                "isMultiKey": false,
+                "multiKeyPaths": {
+                  "patient_id": [],
+                  "measured_at": []
+                },
+                "isUnique": false,
+                "isSparse": false,
+                "isPartial": false,
+                "indexVersion": 2,
+                "direction": "forward",
+                "indexBounds": {
+                  "patient_id": [
+                    "[\"P101\", \"P101\"]"
+                  ],
+                  "measured_at": [
+                    "[MaxKey, MinKey]"
+                  ]
+                }
+              }
+            }
+          },
+          "executionStats": {
+            "executionSuccess": true,
+            "nReturned": 10,
+            "executionTimeMillis": 0,
+            "totalKeysExamined": 10,
+            "totalDocsExamined": 10,
+            "executionStages": {
+              "isCached": false,
+              "stage": "LIMIT",
+              "nReturned": 10,
+              "executionTimeMillisEstimate": 0,
+              "works": 11,
+              "advanced": 10,
+              "needTime": 0,
+              "needYield": 0,
+              "saveState": 0,
+              "restoreState": 0,
+              "isEOF": 1,
+              "limitAmount": 10,
+              "inputStage": {
+                "stage": "FETCH",
+                "nReturned": 10,
+                "executionTimeMillisEstimate": 0,
+                "works": 10,
+                "advanced": 10,
+                "needTime": 0,
+                "needYield": 0,
+                "saveState": 0,
+                "restoreState": 0,
+                "isEOF": 0,
+                "docsExamined": 10,
+                "alreadyHasObj": 0,
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "nReturned": 10,
+                  "executionTimeMillisEstimate": 0,
+                  "works": 10,
+                  "advanced": 10,
+                  "needTime": 0,
+                  "needYield": 0,
+                  "saveState": 0,
+                  "restoreState": 0,
+                  "isEOF": 0,
+                  "keyPattern": {
+                    "patient_id": 1,
+                    "measured_at": -1
+                  },
+                  "indexName": "idx_telemetry_patient_measured",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "patient_id": [],
+                    "measured_at": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "patient_id": [
+                      "[\"P101\", \"P101\"]"
+                    ],
+                    "measured_at": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  },
+                  "keysExamined": 10,
+                  "seeks": 1,
+                  "dupsTested": 0,
+                  "dupsDropped": 0
+                }
+              }
+            },
+            "allPlansExecution": []
+          }
+        }
+      }
+    }
+  }
+}

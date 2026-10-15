@@ -47,7 +47,7 @@ def get_engine(database_url: str | None = None) -> Engine:
         return _engine
 
     settings = get_settings()
-    url = database_url or settings.get_mysql_url()
+    url = database_url or settings.database_url or settings.get_mysql_url()
 
     # Determine if SQLite or MySQL
     if url.startswith("sqlite"):

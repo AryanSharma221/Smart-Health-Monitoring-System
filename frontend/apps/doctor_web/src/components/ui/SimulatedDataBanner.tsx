@@ -18,8 +18,8 @@ export const SimulatedDataBanner: React.FC<SimulatedDataBannerProps> = ({ detail
   const { isFixtureMode } = useDevMode();
 
   const defaultExplanation = isFixtureMode
-    ? 'Viewing isolated Kaggle P101–P105 demonstration cohort. FastAPI gateway (http://localhost:8000) and ML inference service not connected.'
-    : 'Live Gateway Mode: Configured to FastAPI at http://localhost:8000. Telemetry from simulator or live feed.';
+    ? 'Viewing isolated Kaggle P101–P105 demonstration cohort in Demo Mode. Toggle "Live Gateway" in header to connect live telemetry.'
+    : 'Live Gateway Mode: Connected to FastAPI backend with live telemetry and database execution.';
 
   return (
     <div

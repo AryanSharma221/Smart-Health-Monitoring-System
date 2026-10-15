@@ -1,0 +1,232 @@
+{
+  "DEP-HEALTH-INFO": {
+    "passed": true,
+    "detail": "Health check status=200, service=Smart Health Monitoring System",
+    "data": {
+      "status": "healthy",
+      "service": "Smart Health Monitoring System",
+      "version": "3.0.0",
+      "environment": "development",
+      "is_simulated": true,
+      "notice": "SIMULATED DATA \u2014 NOT FOR MEDICAL USE"
+    },
+    "timestamp": 1792020079.1518574
+  },
+  "DEP-HEALTH-LIVE": {
+    "passed": true,
+    "detail": "Liveness status=200, state=alive",
+    "data": {
+      "status": "alive",
+      "service": "Smart Health Monitoring System",
+      "version": "3.0.0"
+    },
+    "timestamp": 1792020079.1753378
+  },
+  "DEP-HEALTH-READY": {
+    "passed": true,
+    "detail": "Readiness status=200, db=connected, mongo_mirror=connected",
+    "data": {
+      "status": "ready",
+      "database": "connected",
+      "mongodb_mirror": "connected",
+      "simulator_ingestion": "streaming",
+      "message": "Authoritative database operational. Ready to serve traffic."
+    },
+    "timestamp": 1792020079.238855
+  },
+  "DEP-HEALTH-MYSQL": {
+    "passed": true,
+    "detail": "Relational storage status=200, driver=mysql_innodb",
+    "data": {
+      "status": "connected",
+      "database": "mysql_innodb"
+    },
+    "timestamp": 1792020079.2530036
+  },
+  "DEP-HEALTH-MONGO": {
+    "passed": true,
+    "detail": "MongoDB status=200, endpoint_masked=True, pending_outbox=3289",
+    "data": {
+      "status": "connected",
+      "database": "smart_health_analytics",
+      "endpoint": "mongodb+srv://***:***@cluster0.offnaie.mongodb.net/?retryWrites=true&w=majority",
+      "outbox_queue": {
+        "pending": 3289,
+        "processing": 0,
+        "completed": 1450,
+        "failed": 0
+      }
+    },
+    "timestamp": 1792020079.3310163
+  },
+  "DEP-AUTH-LOGIN": {
+    "passed": true,
+    "detail": "Doctor login status=200, token_acquired=True",
+    "data": null,
+    "timestamp": 1792020079.551423
+  },
+  "DEP-AUTH-ME": {
+    "passed": true,
+    "detail": "Profile status=200, role=doctor",
+    "data": {
+      "user_id": "U_DOC_001",
+      "email": "doctor@hospital.org",
+      "role": "doctor",
+      "is_active": true,
+      "created_at": "2026-10-14T18:53:06",
+      "patient_profile": null,
+      "doctor_profile": {
+        "doctor_id": "DOC_001",
+        "first_name": "Sarah",
+        "last_name": "Connor",
+        "specialization": "Cardiology",
+        "license_number": "MD-98765-CA",
+        "contact_phone": null
+      },
+      "name": "Dr. Sarah Connor",
+      "license_number": "MD-98765-CA"
+    },
+    "timestamp": 1792020079.5672705
+  },
+  "DEP-AUTH-PATIENT-QUERY": {
+    "passed": true,
+    "detail": "Patient query status=200, patient_id=P101",
+    "data": {
+      "patient_id": "P101",
+      "first_name": "Kaggle",
+      "last_name": "Patient P101",
+      "name": "Kaggle Patient P101",
+      "source_patient_id": "P101",
+      "date_of_birth": null,
+      "gender": "unknown",
+      "height_cm": null,
+      "weight_kg": null,
+      "contact_phone": null,
+      "emergency_contact": null
+    },
+    "timestamp": 1792020079.575949
+  },
+  "DEP-AUTH-UNAUTH-REJECT": {
+    "passed": true,
+    "detail": "Unauthenticated request correctly rejected with HTTP 401",
+    "data": null,
+    "timestamp": 1792020079.5781655
+  },
+  "DEP-RBAC-PATIENT-SIM-REJECT": {
+    "passed": true,
+    "detail": "Patient login verified or not required",
+    "data": null,
+    "timestamp": 1792020079.585204
+  },
+  "DEP-ML-STATUS": {
+    "passed": true,
+    "detail": "ML model status=200, algorithm=IsolationForest, version=1.0.0",
+    "data": {
+      "status": "ready",
+      "is_available": true,
+      "model_version": "1.0.0",
+      "algorithm": "IsolationForest",
+      "feature_count": 38,
+      "has_baseline_manager": true,
+      "artifact_path": "C:\\Users\\Aryan\\.gemini\\antigravity\\scratch\\smart-health-monitoring\\models\\iforest_v1",
+      "notice": "SIMULATED DATA \u2014 NOT FOR MEDICAL USE"
+    },
+    "timestamp": 1792020079.6096992
+  },
+  "DEP-ML-INFERENCE": {
+    "passed": true,
+    "detail": "ML assessment status=200, model_version=1.0.0, score=0.3261, result=normal",
+    "data": {
+      "assessment_id": null,
+      "patient_id": "P101",
+      "model_version": "1.0.0",
+      "score": 0.3261,
+      "result": "normal",
+      "is_anomaly": false,
+      "feature_summary": {
+        "heart_rate_latest": 78.0,
+        "spo2_latest": 98.0,
+        "temperature_f_latest": 98.6,
+        "heart_rate_rolling_mean": 79.1,
+        "spo2_rolling_min": 98.0,
+        "temp_rolling_max": 98.6,
+        "vital_strain_index": -0.53,
+        "window_sample_count": 44,
+        "respiratory_rate_unmodeled": 16.0,
+        "blood_pressure_unmodeled": "120/80"
+      },
+      "time_window_start": "2026-10-14T21:21:19.626976Z",
+      "time_window_end": "2026-10-14T23:21:19.626976Z",
+      "explanation": [
+        "All vital signs and rolling metrics are within normative baseline clusters."
+      ],
+      "alert_triggered": false,
+      "alert_id": null,
+      "latency_ms": 5.26,
+      "notice": "SIMULATED DATA \u2014 NOT FOR MEDICAL USE"
+    },
+    "timestamp": 1792020079.633329
+  },
+  "DEP-SIM-INITIAL-STATE": {
+    "passed": true,
+    "detail": "Simulator status=200, lifecycle=STOPPED",
+    "data": null,
+    "timestamp": 1792020079.8526244
+  },
+  "DEP-SIM-STOP": {
+    "passed": true,
+    "detail": "Simulator stop command status=200, lifecycle_state=STOPPED",
+    "data": null,
+    "timestamp": 1792020080.072864
+  },
+  "DEP-SIM-START": {
+    "passed": true,
+    "detail": "Simulator start command status=200, lifecycle_state=RUNNING",
+    "data": null,
+    "timestamp": 1792020080.2684414
+  },
+  "DEP-SIM-PROVENANCE": {
+    "passed": true,
+    "detail": "Simulated readings count=5, is_simulated=True",
+    "data": null,
+    "timestamp": 1792020081.2700863
+  },
+  "DEP-SIM-FINAL-STOP": {
+    "passed": true,
+    "detail": "Simulator final stop status=200, state=STOPPED",
+    "data": null,
+    "timestamp": 1792020081.4661174
+  },
+  "DEP-APP-OPERATIONAL-WHILE-STOPPED": {
+    "passed": true,
+    "detail": "EHR operational: P101 status=200, alerts status=200, unassigned P001 RBAC protected (status=403)",
+    "data": null,
+    "timestamp": 1792020081.5358589
+  },
+  "DEP-WS-COMMUNICATION": {
+    "passed": true,
+    "detail": "WebSocket connected and received: type=connection_established",
+    "data": {
+      "type": "connection_established",
+      "user_id": "U_DOC_001",
+      "role": "doctor",
+      "auto_subscribed_patient": null,
+      "timestamp": "2026-10-14T23:21:21.568584+00:00"
+    },
+    "timestamp": 1792020081.5696447
+  },
+  "DEP-FE-BUILD-ARTIFACTS": {
+    "passed": true,
+    "detail": "Frontend build verified: index.html exists, 1 JS chunk(s), 1 CSS bundle(s)",
+    "data": {
+      "index_html_bytes": 623,
+      "js_chunks": [
+        "index-Mk7--jlY.js"
+      ],
+      "css_bundles": [
+        "index-DPkG4fcL.css"
+      ]
+    },
+    "timestamp": 1792020081.5712285
+  }
+}

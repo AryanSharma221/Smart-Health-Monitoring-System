@@ -11,6 +11,7 @@ import {
   SettingsIcon,
   CloseIcon,
   SignOutIcon,
+  DatabaseIcon,
 } from '../ui/Icons';
 import styles from './Sidebar.module.css';
 
@@ -33,6 +34,7 @@ const PRIMARY_NAV: NavItemDef[] = [
 ];
 
 const SECONDARY_NAV: NavItemDef[] = [
+  { path: '/evaluation', label: 'DA3 Evaluation', icon: <DatabaseIcon /> },
   { path: '/system-status', label: 'System status', icon: <SystemStatusIcon /> },
   { path: '/settings', label: 'Settings', icon: <SettingsIcon /> },
 ];

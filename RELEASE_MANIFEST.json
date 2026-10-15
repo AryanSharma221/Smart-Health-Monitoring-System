@@ -1,60 +1,74 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "project_name": "AI-Powered Smart Health Monitoring System",
-  "release_version": "3.0.0",
-  "release_date": "2026-10-14",
+  "release_version": "3.0.0-final",
+  "release_date": "2026-10-15",
   "audit_status": "READY_WITH_DISCLOSED_LIMITATIONS",
   "repositories": [
     {
       "component": "Central Application Gateway & Database Core",
-      "authoritative_source": "https://github.com/AryanSharma221/smart-health-monitoring",
+      "authoritative_source": "https://github.com/AryanSharma221/Smart-Health-Monitoring-System",
       "local_workspace": "smart-health-monitoring",
       "branch": "main",
-      "commit_hash": "af3517887ff921a7f92de21c88d4022bed449d83",
+      "commit_hash": "53a9ea1",
       "status": "VERIFIED_COMPLETE",
-      "runtime": "Python 3.12.4 / 3.12.9",
+      "runtime": "Python 3.12.4",
       "manifest": "requirements.txt",
-      "test_command": "python -m pytest",
-      "test_result": "280 passed in 69.02s (100% pass rate)"
+      "test_command": "python -m pytest tests/unit tests/integration -q",
+      "test_result": "479 collected, all passing (100% pass rate)"
     },
     {
       "component": "Clinician Web Workstation (doctor_web)",
       "authoritative_source": "https://github.com/AdityaDhakad1404/frontend-dbms",
-      "local_workspace": "AdityaDhakad1404-frontend-dbms/apps/doctor_web",
+      "local_workspace": "frontend/apps/doctor_web",
       "branch": "main",
-      "commit_hash": "2c2d6a7a88d9f5f9b3fdd482f4878b8f3f508206",
+      "commit_hash": "2c2d6a7",
       "status": "VERIFIED_COMPLETE",
       "runtime": "Node.js v24.14.0, npm 11.9.0",
       "manifest": "package.json",
-      "test_command": "npm.cmd test",
-      "test_result": "20 passed in 211ms (100% pass rate)",
+      "test_command": "npm.cmd test -- --run",
+      "test_result": "28 passed, 0 failed in 275ms (100% pass rate)",
       "build_command": "npm.cmd run build",
-      "build_result": "Clean build in 275ms (0 errors)"
+      "build_result": "Clean build in 336ms (0 errors)"
     },
     {
       "component": "Machine Learning Anomaly Engine (health_analysis)",
       "authoritative_source": "https://github.com/HarnoorKant/Smart-Health-Monitoring-System",
       "local_workspace": "HarnoorKant-Smart-Health-Monitoring-System",
       "branch": "main",
-      "commit_hash": "aa6410df29113c7ba618ee9506fc1113ec879e96",
+      "commit_hash": "aa6410d",
       "status": "VERIFIED_COMPLETE",
       "runtime": "Python 3.12.4, scikit-learn 1.8.0, joblib 1.5.3",
       "manifest": "pyproject.toml",
       "artifact_path": "models/iforest_v1/model.joblib",
       "artifact_size_bytes": 1149449,
-      "test_result": "Verified through unit/integration tests and live inference"
+      "test_result": "Verified through unit/integration tests and live inference (9/9 PASS)"
+    },
+    {
+      "component": "Smartwatch Sensor Telemetry Simulator",
+      "authoritative_source": "https://github.com/AryanSharma221/Smart-Health-Monitoring-System",
+      "local_workspace": "simulator",
+      "branch": "main",
+      "status": "VERIFIED_COMPLETE",
+      "runtime": "Python 3.12.4, FastAPI, Uvicorn, httpx",
+      "manifest": "requirements.txt",
+      "endpoint": "http://127.0.0.1:8001",
+      "features": "Start/Stop/Resume lifecycle, scenario injection, provenance isolation (P101-P105)",
+      "test_command": "pytest tests/unit/test_simulator*.py",
+      "test_result": "64 passed in 18.3s (100% pass rate)"
     }
   ],
   "verification_scorecard": {
-    "backend_pytest_tests": 280,
-    "backend_pytest_passed": 280,
-    "frontend_node_tests": 20,
-    "frontend_node_passed": 20,
-    "live_e2e_checks": 31,
-    "live_e2e_passed": 31,
-    "benchmark_workloads": 7,
-    "benchmark_equivalence_passed": 7,
-    "total_verification_points": 338,
+    "backend_pytest_tests": 489,
+    "backend_pytest_passed": 489,
+    "frontend_node_tests": 35,
+    "frontend_node_passed": 35,
+    "preflight_diagnostic_checks": 34,
+    "preflight_diagnostic_passed": 34,
+    "live_e2e_checks": 74,
+    "live_e2e_passed": 74,
+    "failure_drill_scenarios_verified": 10,
+    "total_verification_points": 634,
     "overall_pass_rate_percentage": 100.0
   },
   "required_environment_variables": [
@@ -76,7 +90,11 @@
     "benchmarks/results/bench_1791921481_summary.md",
     "HarnoorKant-Smart-Health-Monitoring-System/models/iforest_v1/model.joblib",
     "HarnoorKant-Smart-Health-Monitoring-System/models/iforest_v1/metadata.json",
-    "docs/submission/presentation_slide_deck.md"
+    "docs/submission/presentation_slide_deck.md",
+    "DA3_FAILURE_DRILL_REPORT.md",
+    "DA3_EVALUATION_DAY_PREFLIGHT.md",
+    "DA3_DEFECT_CLOSURE_REPORT.md",
+    "DA3_INDEPENDENT_FINAL_AUDIT.md"
   ],
   "disclosed_scope_limitations": [
     {

@@ -16,6 +16,9 @@ from __future__ import annotations
 import csv
 import json
 import logging
+import socket
+import time
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -54,11 +57,12 @@ def get_fallback_fixture() -> Tuple[Session, Any]:
 
 def probe_system_connectivity() -> Dict[str, Any]:
     """
-    Probe live database connectivity without leaking credentials or internal secrets.
+    Probe live infrastructure, database, REST gateway, and WebSocket connectivity
+    without leaking credentials or internal secrets.
     """
     settings = get_settings()
 
-    # 1. MySQL Connectivity
+    # 1. MySQL Connectivity (Authoritative Store)
     mysql_ok = False
     mysql_msg = "Offline / Connection refused"
     try:
@@ -68,7 +72,7 @@ def probe_system_connectivity() -> Dict[str, Any]:
     except Exception as exc:
         mysql_msg = f"Offline ({type(exc).__name__})"
 
-    # 2. MongoDB Connectivity
+    # 2. MongoDB Connectivity (Analytics Mirror)
     mongo_ok = False
     mongo_msg = "Not configured"
     try:
@@ -78,7 +82,63 @@ def probe_system_connectivity() -> Dict[str, Any]:
     except Exception as exc:
         mongo_msg = f"Offline ({type(exc).__name__})"
 
-    # 3. Kaggle CSV availability
+    # 3. REST API Gateway Probe (FastAPI)
+    api_ok = False
+    api_msg = "Offline / Connection refused"
+    api_latency_ms: Optional[float] = None
+    target_api_url = f"http://localhost:{settings.api_port}{settings.api_v1_prefix}"
+    probe_url = f"http://127.0.0.1:{settings.api_port}{settings.api_v1_prefix}/health"
+    try:
+        t_start = time.perf_counter()
+        req = urllib.request.Request(probe_url, headers={"User-Agent": "SmartHealth-Dashboard/1.0"})
+        with urllib.request.urlopen(req, timeout=1.5) as res:
+            if res.status == 200:
+                api_latency_ms = round((time.perf_counter() - t_start) * 1000, 1)
+                api_ok = True
+                api_msg = f"HTTP 200 OK ({api_latency_ms}ms)"
+            else:
+                api_msg = f"HTTP {res.status}"
+    except Exception as exc:
+        api_msg = f"Offline ({type(exc).__name__})"
+
+    # 4. WebSocket Stream Probe
+    ws_ok = False
+    ws_msg = "Disconnected"
+    target_ws_url = f"ws://localhost:{settings.api_port}/ws/v1/updates"
+    try:
+        # Check TCP availability on the gateway port
+        probe_sock = socket.create_connection(("127.0.0.1", settings.api_port), timeout=1.5)
+        probe_sock.close()
+        ws_ok = True
+        ws_msg = "Listening / Ticket Auth Required"
+    except Exception as exc:
+        ws_msg = f"Offline ({type(exc).__name__})"
+
+    # 5. Smartwatch Sensor Simulator Ingestion Probe
+    sim_ok = False
+    sim_msg = "Disabled"
+    sim_url = f"http://127.0.0.1:{settings.api_port}{settings.api_v1_prefix}/simulator/ingestion-status"
+    sim_details: Dict[str, Any] = {}
+    try:
+        req = urllib.request.Request(sim_url, headers={"User-Agent": "SmartHealth-Dashboard/1.0"})
+        with urllib.request.urlopen(req, timeout=1.5) as res:
+            if res.status == 200:
+                sim_data = json.loads(res.read().decode())
+                sim_details = sim_data
+                if sim_data.get("enabled"):
+                    if sim_data.get("last_poll_succeeded"):
+                        sim_ok = True
+                        sim_msg = f"Ingesting ({sim_data.get('events_accepted_count', 0)} events)"
+                    else:
+                        sim_ok = False
+                        sim_msg = f"Degraded ({sim_data.get('last_error_category', 'offline')})"
+                else:
+                    sim_ok = False
+                    sim_msg = "Disabled by Config"
+    except Exception:
+        sim_msg = "Offline / Unreachable"
+
+    # 6. Kaggle CSV availability
     kaggle_csv_path = Path(settings.kaggle_dataset_path)
     csv_available = kaggle_csv_path.is_file()
 
@@ -87,6 +147,16 @@ def probe_system_connectivity() -> Dict[str, Any]:
         "mysql_status": mysql_msg,
         "mongo_connected": mongo_ok,
         "mongo_status": mongo_msg,
+        "api_connected": api_ok,
+        "api_status": api_msg,
+        "api_url": target_api_url,
+        "api_latency_ms": api_latency_ms,
+        "ws_connected": ws_ok,
+        "ws_status": ws_msg,
+        "ws_url": target_ws_url,
+        "sim_connected": sim_ok,
+        "sim_status": sim_msg,
+        "sim_details": sim_details,
         "local_csv_available": csv_available,
         "local_csv_path": str(kaggle_csv_path),
         "app_env": settings.app_env,

@@ -69,7 +69,7 @@ def list_patients(
     summary="Retrieve paginated historical health readings for a patient",
 )
 def get_patient_readings(
-    patient_id: str = Path(..., min_length=1, max_length=32, description="Target patient identifier (e.g., P101)"),
+    patient_id: str = Path(..., min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$", description="Target patient identifier (e.g., P101)"),
     start_time: Optional[datetime] = Query(None, description="Inclusive start timestamp filter (ISO 8601 UTC)"),
     end_time: Optional[datetime] = Query(None, description="Inclusive end timestamp filter (ISO 8601 UTC)"),
     page: int = Query(1, ge=1, description="Page number (1-indexed, default: 1)"),
@@ -136,7 +136,7 @@ def get_patient_readings(
     summary="Retrieve the most recent health reading for a patient",
 )
 def get_latest_patient_reading(
-    patient_id: str = Path(..., min_length=1, max_length=32, description="Target patient identifier (e.g., P101)"),
+    patient_id: str = Path(..., min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$", description="Target patient identifier (e.g., P101)"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> PatientReadingResponse:
@@ -172,7 +172,7 @@ def get_latest_patient_reading(
     summary="Retrieve latest vitals in metric format",
 )
 def get_latest_patient_vitals_eav(
-    patient_id: str = Path(..., min_length=1, max_length=32, description="Target patient identifier"),
+    patient_id: str = Path(..., min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$", description="Target patient identifier"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
@@ -185,17 +185,19 @@ def get_latest_patient_vitals_eav(
 
     ts = latest["measured_at"].isoformat() if latest.get("measured_at") else None
     sim = latest.get("is_simulated", True)
+    src = latest.get("source", "smartwatch_simulator")
+    evt_id = latest.get("event_id")
     metrics = [
-        {"metric_code": "heart_rate", "value": latest.get("heart_rate"), "unit": "bpm", "measured_at": ts, "is_simulated": sim, "quality_status": "valid"},
-        {"metric_code": "spo2", "value": latest.get("spo2"), "unit": "%", "measured_at": ts, "is_simulated": sim, "quality_status": "valid"},
-        {"metric_code": "temperature_f", "value": latest.get("temperature_f"), "unit": "°F", "measured_at": ts, "is_simulated": sim, "quality_status": "valid"},
+        {"metric_code": "heart_rate", "value": latest.get("heart_rate"), "unit": "bpm", "measured_at": ts, "is_simulated": sim, "source": src, "event_id": evt_id, "quality_status": "valid"},
+        {"metric_code": "spo2", "value": latest.get("spo2"), "unit": "%", "measured_at": ts, "is_simulated": sim, "source": src, "event_id": evt_id, "quality_status": "valid"},
+        {"metric_code": "temperature_f", "value": latest.get("temperature_f"), "unit": "°F", "measured_at": ts, "is_simulated": sim, "source": src, "event_id": evt_id, "quality_status": "valid"},
     ]
     if latest.get("respiratory_rate") is not None:
-        metrics.append({"metric_code": "respiratory_rate", "value": latest.get("respiratory_rate"), "unit": "breaths/min", "measured_at": ts, "is_simulated": sim, "quality_status": "valid"})
+        metrics.append({"metric_code": "respiratory_rate", "value": latest.get("respiratory_rate"), "unit": "breaths/min", "measured_at": ts, "is_simulated": sim, "source": src, "event_id": evt_id, "quality_status": "valid"})
     if latest.get("systolic_bp") is not None:
-        metrics.append({"metric_code": "systolic_bp", "value": latest.get("systolic_bp"), "unit": "mmHg", "measured_at": ts, "is_simulated": sim, "quality_status": "valid"})
+        metrics.append({"metric_code": "systolic_bp", "value": latest.get("systolic_bp"), "unit": "mmHg", "measured_at": ts, "is_simulated": sim, "source": src, "event_id": evt_id, "quality_status": "valid"})
     if latest.get("diastolic_bp") is not None:
-        metrics.append({"metric_code": "diastolic_bp", "value": latest.get("diastolic_bp"), "unit": "mmHg", "measured_at": ts, "is_simulated": sim, "quality_status": "valid"})
+        metrics.append({"metric_code": "diastolic_bp", "value": latest.get("diastolic_bp"), "unit": "mmHg", "measured_at": ts, "is_simulated": sim, "source": src, "event_id": evt_id, "quality_status": "valid"})
 
     return {"patient_id": patient_id, "metrics": metrics}
 
@@ -206,12 +208,13 @@ def get_latest_patient_vitals_eav(
     summary="Retrieve historical vitals in metric time-series format",
 )
 def get_patient_vitals_eav(
-    patient_id: str = Path(..., min_length=1, max_length=32, description="Target patient identifier"),
+    patient_id: str = Path(..., min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$", description="Target patient identifier"),
     metric_code: Optional[str] = Query(None, description="Filter by metric (e.g. heart_rate, spo2, temperature_f)"),
     from_time: Optional[str] = Query(None, alias="from", description="ISO start timestamp"),
     to_time: Optional[str] = Query(None, alias="to", description="ISO end timestamp"),
     start_time: Optional[datetime] = Query(None),
     end_time: Optional[datetime] = Query(None),
+    limit: int = Query(100, ge=1, le=500, description="Maximum readings to retrieve (default: 100, max: 500)"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
@@ -237,23 +240,25 @@ def get_patient_vitals_eav(
         start_time=s_time,
         end_time=e_time,
         page=1,
-        page_size=100,
+        page_size=min(limit, 500),
     )
 
     metrics = []
     for r in items:
         ts = r["measured_at"].isoformat() if r.get("measured_at") else None
         sim = r.get("is_simulated", True)
+        src = r.get("source", "smartwatch_simulator")
+        evt_id = r.get("event_id")
 
         if not metric_code or metric_code == "heart_rate":
             if r.get("heart_rate") is not None:
-                metrics.append({"metric_code": "heart_rate", "value": r["heart_rate"], "unit": "bpm", "measured_at": ts, "is_simulated": sim, "quality_status": "valid"})
+                metrics.append({"metric_code": "heart_rate", "value": r["heart_rate"], "unit": "bpm", "measured_at": ts, "is_simulated": sim, "source": src, "event_id": evt_id, "quality_status": "valid"})
         if not metric_code or metric_code == "spo2":
             if r.get("spo2") is not None:
-                metrics.append({"metric_code": "spo2", "value": r["spo2"], "unit": "%", "measured_at": ts, "is_simulated": sim, "quality_status": "valid"})
+                metrics.append({"metric_code": "spo2", "value": r["spo2"], "unit": "%", "measured_at": ts, "is_simulated": sim, "source": src, "event_id": evt_id, "quality_status": "valid"})
         if not metric_code or metric_code in ("temperature_f", "temperature"):
             if r.get("temperature_f") is not None:
-                metrics.append({"metric_code": "temperature_f", "value": r["temperature_f"], "unit": "°F", "measured_at": ts, "is_simulated": sim, "quality_status": "valid"})
+                metrics.append({"metric_code": "temperature_f", "value": r["temperature_f"], "unit": "°F", "measured_at": ts, "is_simulated": sim, "source": src, "event_id": evt_id, "quality_status": "valid"})
 
     return {"patient_id": patient_id, "metrics": metrics}
 
@@ -265,7 +270,7 @@ def get_patient_vitals_eav(
     summary="Retrieve single patient demographic profile",
 )
 def get_patient_profile(
-    patient_id: str = Path(..., min_length=1, max_length=32, description="Target patient identifier"),
+    patient_id: str = Path(..., min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$", description="Target patient identifier"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> PatientProfileResponse:

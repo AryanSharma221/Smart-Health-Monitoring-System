@@ -6,4 +6,5 @@ export * from './AlertsPage';
 export * from './MessagesPage';
 export * from './SystemStatusPage';
 export * from './SettingsPage';
+export * from './DA3EvaluationPage';
 export * from './NotFoundPage';

@@ -1,0 +1,245 @@
+{
+  "timestamp_utc": "2026-10-15T07:01:15.046865+00:00",
+  "audit_version": "1.0.0",
+  "da3_phase": "Part 8A \u2014 Database Security and Role-Based Access Control",
+  "test_results": [
+    {
+      "test_id": "AUTH-UNAUTH-PATIENTS",
+      "description": "Unauthenticated GET /api/v1/patients rejected with 401",
+      "expected_status": 401,
+      "actual_status": 401,
+      "status": "PASS",
+      "detail": "Authentication credentials were not provided."
+    },
+    {
+      "test_id": "AUTH-UNAUTH-READINGS",
+      "description": "Unauthenticated GET /api/v1/patients/P101/readings rejected with 401",
+      "expected_status": 401,
+      "actual_status": 401,
+      "status": "PASS",
+      "detail": "Authentication credentials were not provided."
+    },
+    {
+      "test_id": "AUTH-UNAUTH-ALERTS",
+      "description": "Unauthenticated GET /api/v1/patients/P101/alerts rejected with 401",
+      "expected_status": 401,
+      "actual_status": 401,
+      "status": "PASS",
+      "detail": "Authentication credentials were not provided."
+    },
+    {
+      "test_id": "AUTH-UNAUTH-CONVERSATIONS",
+      "description": "Unauthenticated GET /api/v1/conversations rejected with 401",
+      "expected_status": 401,
+      "actual_status": 401,
+      "status": "PASS",
+      "detail": "Authentication credentials were not provided."
+    },
+    {
+      "test_id": "AUTH-UNAUTH-ACKNOWLEDGE",
+      "description": "Unauthenticated POST /api/v1/alerts/ALT_P101_001/acknowledge rejected with 401",
+      "expected_status": 401,
+      "actual_status": 401,
+      "status": "PASS",
+      "detail": "Authentication credentials were not provided."
+    },
+    {
+      "test_id": "AUTH-UNAUTH-ASSESS",
+      "description": "Unauthenticated POST /api/v1/patients/P101/assess rejected with 401",
+      "expected_status": 401,
+      "actual_status": 401,
+      "status": "PASS",
+      "detail": "Authentication credentials were not provided."
+    },
+    {
+      "test_id": "TOKEN-EXPIRED",
+      "description": "Expired JWT token rejected",
+      "expected_status": 401,
+      "actual_status": 401,
+      "status": "PASS",
+      "detail": "Could not validate credentials: token is invalid or expired."
+    },
+    {
+      "test_id": "TOKEN-TAMPERED",
+      "description": "Tampered JWT signature rejected",
+      "expected_status": 401,
+      "actual_status": 401,
+      "status": "PASS",
+      "detail": "Could not validate credentials: token is invalid or expired."
+    },
+    {
+      "test_id": "TOKEN-MALFORMED",
+      "description": "Malformed JWT string rejected",
+      "expected_status": 401,
+      "actual_status": 401,
+      "status": "PASS",
+      "detail": "Could not validate credentials: token is invalid or expired."
+    },
+    {
+      "test_id": "TOKEN-INACTIVE",
+      "description": "Inactive user account token rejected",
+      "expected_status": 401,
+      "actual_status": 401,
+      "status": "PASS",
+      "detail": "User account is inactive or disabled."
+    },
+    {
+      "test_id": "PAT-OWN-READ",
+      "description": "Patient P101 accesses own readings",
+      "expected_status": 200,
+      "actual_status": 200,
+      "status": "PASS",
+      "detail": "Permitted"
+    },
+    {
+      "test_id": "PAT-CROSS-READ",
+      "description": "Patient P101 cross-access to P102 readings rejected",
+      "expected_status": 403,
+      "actual_status": 403,
+      "status": "PASS",
+      "detail": "Forbidden: You can only access your own patient records."
+    },
+    {
+      "test_id": "PAT-CROSS-ALERT",
+      "description": "Patient P101 cross-access to P102 alerts rejected",
+      "expected_status": 403,
+      "actual_status": 403,
+      "status": "PASS",
+      "detail": "Forbidden: You can only access your own patient records."
+    },
+    {
+      "test_id": "PAT-DENY-ACK",
+      "description": "Patient role forbidden from acknowledging clinical alerts",
+      "expected_status": 403,
+      "actual_status": 403,
+      "status": "PASS",
+      "detail": "Forbidden: Only clinicians and administrative operators can acknowledge clinical alerts."
+    },
+    {
+      "test_id": "DOC-ASSIGNED-OK",
+      "description": "Doctor Alice accesses assigned patient P101",
+      "expected_status": 200,
+      "actual_status": 200,
+      "status": "PASS",
+      "detail": "Permitted"
+    },
+    {
+      "test_id": "DOC-UNASSIGN-DENY",
+      "description": "Doctor Alice access to unassigned patient P102 rejected",
+      "expected_status": 403,
+      "actual_status": 403,
+      "status": "PASS",
+      "detail": "Forbidden: Clinician is not assigned to this patient."
+    },
+    {
+      "test_id": "DOC-BOB-P102-OK",
+      "description": "Doctor Bob accesses assigned patient P102",
+      "expected_status": 200,
+      "actual_status": 200,
+      "status": "PASS",
+      "detail": "Permitted"
+    },
+    {
+      "test_id": "DOC-UNASSIGN-ACK",
+      "description": "Doctor Bob cannot acknowledge alert for unassigned patient P101",
+      "expected_status": 403,
+      "actual_status": 403,
+      "status": "PASS",
+      "detail": "Forbidden: Clinician is not assigned to this patient."
+    },
+    {
+      "test_id": "DOC-ASSIGNED-ACK",
+      "description": "Doctor Alice acknowledges alert for assigned patient P101",
+      "expected_status": 200,
+      "actual_status": 200,
+      "status": "PASS",
+      "detail": "Permitted"
+    },
+    {
+      "test_id": "MSG-PARTICIPANT-LIST",
+      "description": "P101 lists own conversations",
+      "expected_status": 200,
+      "actual_status": 200,
+      "status": "PASS",
+      "detail": "CONV_ALICE_P101 found"
+    },
+    {
+      "test_id": "MSG-ISOLATION-LIST",
+      "description": "P102 cannot see Alice-P101 conversation",
+      "expected_status": 200,
+      "actual_status": 200,
+      "status": "PASS",
+      "detail": "Strict isolation"
+    },
+    {
+      "test_id": "MSG-SNOOP-DENIED",
+      "description": "Doctor Bob forbidden from viewing Alice-P101 messages",
+      "expected_status": 403,
+      "actual_status": 403,
+      "status": "PASS",
+      "detail": "Access denied: You are not a participant in this conversation."
+    },
+    {
+      "test_id": "INPUT-PATH-SQLI",
+      "description": "SQL injection in patient_id rejected by regex validator",
+      "expected_status": 422,
+      "actual_status": 422,
+      "status": "PASS",
+      "detail": "Path regex rejection"
+    },
+    {
+      "test_id": "INPUT-PAGE-BOUND",
+      "description": "Excessive page_size (> 100) rejected",
+      "expected_status": 422,
+      "actual_status": 422,
+      "status": "PASS",
+      "detail": "Boundary enforcement"
+    }
+  ],
+  "database_privilege_audit": {
+    "smart_health_app": {
+      "role": "Runtime FastAPI Application Gateway",
+      "privileges": "SELECT, INSERT, UPDATE, DELETE, EXECUTE on smart_health.*",
+      "ddl_permitted": false,
+      "admin_permitted": false,
+      "verified_in_script": true
+    },
+    "smart_health_analytics": {
+      "role": "Read-Only Reporting & Streamlit Dashboard",
+      "privileges": "SELECT, SHOW VIEW on smart_health.*",
+      "ddl_permitted": false,
+      "admin_permitted": false,
+      "verified_in_script": true
+    },
+    "smart_health_migrator": {
+      "role": "Alembic Schema Evolution & Migrations",
+      "privileges": "CRUD + DDL (CREATE, ALTER, DROP, INDEX, TRIGGER) on smart_health.*",
+      "ddl_permitted": true,
+      "admin_permitted": false,
+      "verified_in_script": true
+    },
+    "smart_health_backup": {
+      "role": "mysqldump Non-Destructive Backup Automation",
+      "privileges": "SELECT, LOCK TABLES, SHOW VIEW, TRIGGER + global PROCESS",
+      "ddl_permitted": false,
+      "admin_permitted": false,
+      "verified_in_script": true
+    },
+    "smart_health_admin": {
+      "role": "DBA Disaster Recovery Operator",
+      "privileges": "ALL PRIVILEGES on smart_health and recovery targets",
+      "ddl_permitted": true,
+      "admin_permitted": true,
+      "verified_in_script": true
+    }
+  },
+  "summary": {
+    "total_authorization_tests": 24,
+    "passed_tests": 24,
+    "failed_tests": 0,
+    "pass_rate": "100.0%",
+    "duration_ms": 2425.19,
+    "status": "PASSED",
+    "mongo_document_count_preserved": true
+  }
+}

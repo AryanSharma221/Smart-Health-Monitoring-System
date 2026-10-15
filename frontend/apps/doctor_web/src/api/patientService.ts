@@ -87,7 +87,6 @@ interface RawPatientDto {
   assigned_doctor_id?: string;
 }
 
-/** Raw API Metric structure */
 interface RawMetricDto {
   metric_code?: string;
   metricCode?: string;
@@ -96,6 +95,8 @@ interface RawMetricDto {
   measured_at?: string | null;
   received_at?: string | null;
   source?: string;
+  event_id?: string;
+  eventId?: string;
   is_simulated?: boolean;
   quality_status?: 'valid' | 'suspect' | 'out_of_range';
   freshness?: FreshnessState;
@@ -160,15 +161,21 @@ function normalizeMetric(dto: RawMetricDto): VitalsReading {
       ? dto.freshness
       : calculateFreshness(measuredAt);
 
+  const isSim =
+    dto.is_simulated !== undefined
+      ? Boolean(dto.is_simulated)
+      : dto.source === 'smartwatch_simulator' || dto.source === 'demo-simulator';
+
   return {
+    eventId: dto.event_id || dto.eventId,
     metricCode,
     label,
     value: typeof dto.value === 'number' && !isNaN(dto.value) ? dto.value : null,
     unit,
     measuredAt,
     freshness,
-    source: (dto.source || 'kaggle_csv') as TelemetrySource,
-    isSimulated: dto.is_simulated !== false,
+    source: (dto.source || (isSim ? 'smartwatch_simulator' : 'kaggle_csv')) as TelemetrySource,
+    isSimulated: isSim,
     qualityStatus: dto.quality_status || 'valid',
   };
 }
@@ -309,6 +316,7 @@ export interface VitalHistoryQuery {
   metricCode?: MetricCode;
   from?: string;
   to?: string;
+  limit?: number;
 }
 
 /**
@@ -332,7 +340,7 @@ export async function getPatientById(patientId: string): Promise<PatientProfile>
 
 /**
  * Fetches historical vital readings for a patient.
- * GET /api/v1/patients/{id}/vitals?metric_code=&from=&to=
+ * GET /api/v1/patients/{id}/vitals?metric_code=&from=&to=&limit=
  */
 export async function getPatientVitalHistory(
   patientId: string,
@@ -347,6 +355,9 @@ export async function getPatientVitalHistory(
   }
   if (query?.to) {
     params.append('to', query.to);
+  }
+  if (query?.limit) {
+    params.append('limit', String(query.limit));
   }
 
   const qs = params.toString() ? `?${params.toString()}` : '';

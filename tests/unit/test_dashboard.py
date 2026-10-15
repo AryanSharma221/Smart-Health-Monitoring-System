@@ -26,6 +26,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
+from unittest.mock import patch
+
+from dashboard.components.metrics import (
+    render_alert_severity_badge,
+    render_badge,
+    render_metric_card,
+)
 from dashboard.data_access import (
     fetch_alert_summary,
     fetch_data_quality_report,
@@ -74,6 +81,12 @@ def test_probe_system_connectivity_structure() -> None:
     assert "mysql_status" in status
     assert "mongo_connected" in status
     assert "mongo_status" in status
+    assert "api_connected" in status
+    assert "api_status" in status
+    assert "api_url" in status
+    assert "ws_connected" in status
+    assert "ws_status" in status
+    assert "ws_url" in status
     assert "local_csv_available" in status
     assert "app_env" in status
     assert "timestamp_utc" in status
@@ -324,3 +337,85 @@ def test_list_benchmark_runs_malformed_dir(tmp_path: Path) -> None:
 
     runs = list_benchmark_runs(results_dir=tmp_path)
     assert runs == []
+
+
+# -----------------------------------------------------------------------------
+# 7. UI Components: Metric Cards & Badges
+# -----------------------------------------------------------------------------
+
+def test_render_metric_card_defaults() -> None:
+    """Verify render_metric_card passes default arguments correctly to st.metric."""
+    with patch("dashboard.components.metrics.st.metric") as mock_metric:
+        render_metric_card(label="Heart Rate", value=75, unit="bpm")
+        mock_metric.assert_called_once_with(
+            label="Heart Rate",
+            value="75 bpm",
+            delta=None,
+            delta_color="normal",
+            help=None,
+        )
+
+
+def test_render_metric_card_with_delta_and_delta_color() -> None:
+    """Verify render_metric_card accepts delta, delta_color ('inverse', 'normal'), and help_text."""
+    with patch("dashboard.components.metrics.st.metric") as mock_metric:
+        render_metric_card(
+            label="Missing Essential Fields",
+            value=5,
+            delta="5 flagged",
+            delta_color="inverse",
+            help_text="Events missing patient_id or timestamp.",
+        )
+        mock_metric.assert_called_once_with(
+            label="Missing Essential Fields",
+            value="5",
+            delta="5 flagged",
+            delta_color="inverse",
+            help="Events missing patient_id or timestamp.",
+        )
+
+
+def test_render_metric_card_sanitizes_invalid_delta_color() -> None:
+    """Verify render_metric_card safely falls back to 'normal' on unknown delta_color."""
+    with patch("dashboard.components.metrics.st.metric") as mock_metric:
+        render_metric_card(
+            label="System Check",
+            value="OK",
+            delta="Active",
+            delta_color="unsupported_color_string",
+        )
+        mock_metric.assert_called_once_with(
+            label="System Check",
+            value="OK",
+            delta="Active",
+            delta_color="normal",
+            help=None,
+        )
+
+
+def test_render_metric_card_none_value() -> None:
+    """Verify None value renders safely as '--' without appending unit."""
+    with patch("dashboard.components.metrics.st.metric") as mock_metric:
+        render_metric_card(label="Average Temp", value=None, unit="°F")
+        mock_metric.assert_called_once_with(
+            label="Average Temp",
+            value="--",
+            delta=None,
+            delta_color="normal",
+            help=None,
+        )
+
+
+def test_render_badges_and_alert_severity() -> None:
+    """Verify HTML status badges and clinical alert severity badge generation."""
+    badge_html = render_badge("success", "ONLINE")
+    assert "ONLINE" in badge_html
+    assert "#137333" in badge_html  # Green color
+
+    crit_badge = render_alert_severity_badge("CRITICAL")
+    assert "CRITICAL" in crit_badge
+    assert "#c5221f" in crit_badge  # Red color
+
+    warn_badge = render_alert_severity_badge("HIGH")
+    assert "HIGH" in warn_badge
+    assert "#b06000" in warn_badge  # Orange/amber color

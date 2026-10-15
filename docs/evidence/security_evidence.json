@@ -1,0 +1,120 @@
+{
+  "captured_at": "2026-10-15T05:39:24.772400+00:00",
+  "probes": {
+    "authorized_login": {
+      "url": "/api/v1/auth/login",
+      "method": "POST",
+      "status_code": 200,
+      "latency_ms": 186.92,
+      "outcome": "PERMITTED",
+      "response_sanitized": {
+        "access_token": "[REDACTED_JWT_TOKEN]",
+        "token_type": "bearer",
+        "expires_in": 7200,
+        "user_id": "U_DOC_001",
+        "role": "doctor"
+      }
+    },
+    "authorized_patient_access": {
+      "url": "/api/v1/patients",
+      "method": "GET",
+      "status_code": 401,
+      "latency_ms": 2.3,
+      "outcome": "PERMITTED",
+      "patient_count": 0
+    },
+    "unauthorized_missing_token": {
+      "url": "/api/v1/patients",
+      "method": "GET",
+      "status_code": 401,
+      "latency_ms": 1.74,
+      "outcome": "DENIED (HTTP 401)",
+      "error_response": {
+        "detail": "Authentication credentials were not provided."
+      }
+    },
+    "baseline_deletion_guard": {
+      "url": "/api/v1/evaluation/crud/records/P001",
+      "method": "DELETE",
+      "status_code": 403,
+      "latency_ms": 2.06,
+      "outcome": "DENIED (HTTP 403 Forbidden)",
+      "error_response": {
+        "detail": "Security & Clinical Safety Violation: The delete operation is strictly restricted to isolated test records prefixed with 'EVAL_'. Core EHR data is immutable."
+      }
+    },
+    "invalid_input_validation": {
+      "url": "/api/v1/evaluation/crud/readings",
+      "method": "POST",
+      "status_code": 422,
+      "latency_ms": 4.73,
+      "outcome": "VALIDATION_ERROR (HTTP 422)",
+      "error_response": {
+        "detail": [
+          {
+            "type": "less_than_equal",
+            "loc": [
+              "body",
+              "heart_rate"
+            ],
+            "msg": "Input should be less than or equal to 300",
+            "input": 999.0,
+            "ctx": {
+              "le": 300.0
+            }
+          }
+        ]
+      }
+    },
+    "missing_record_lookup": {
+      "url": "/api/v1/evaluation/crud/records/EVAL_NONEXISTENT_999",
+      "method": "GET",
+      "status_code": 404,
+      "latency_ms": 3.53,
+      "outcome": "NOT_FOUND (HTTP 404)",
+      "error_response": {
+        "detail": "Evaluation record 'EVAL_NONEXISTENT_999' not found."
+      }
+    },
+    "simulator_quiescent_state": {
+      "url": "http://127.0.0.1:8001/api/v1/simulator/status",
+      "method": "GET",
+      "status_code": 200,
+      "latency_ms": 1.85,
+      "outcome": "GRACEFUL_STATUS_REPORT",
+      "response": {
+        "is_running": false,
+        "interval_seconds": 5.0,
+        "current_scenario": "normal",
+        "configured_patients": [
+          "P101",
+          "P102",
+          "P103",
+          "P104",
+          "P105"
+        ],
+        "total_readings_generated": 50,
+        "buffer_capacity": 2000,
+        "buffer_used": 50,
+        "latest_generation_at": "2026-10-15T05:28:27.738984Z",
+        "patient_states": {
+          "P101": "resting",
+          "P102": "resting",
+          "P103": "resting",
+          "P104": "resting",
+          "P105": "resting"
+        },
+        "interrupted_patients": [],
+        "active_patients": [
+          "P101",
+          "P102",
+          "P103",
+          "P104",
+          "P105"
+        ],
+        "lifecycle_state": "STOPPED",
+        "disclaimer": "SIMULATED TELEMETRY  NOT FOR MEDICAL USE OR CLINICAL DIAGNOSIS"
+      }
+    }
+  }
+}

@@ -15,7 +15,7 @@ import { DevModeContext, type DevModeContextType } from './devModeContextDefinit
 const STORAGE_KEY = 'shm_dev_fixture_mode';
 
 export const DevModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Default to true because the backend and ML services are not yet implemented
+  // Default to false (Live Gateway Mode) as FastAPI backend and ML services are operational
   const [isDemoMode, setIsDemoModeState] = useState<boolean>(() => {
     try {
       const saved = sessionStorage.getItem(STORAGE_KEY);
@@ -25,7 +25,7 @@ export const DevModeProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } catch {
       // storage unavailable
     }
-    return true;
+    return false;
   });
 
   const setDemoMode = useCallback((value: boolean) => {

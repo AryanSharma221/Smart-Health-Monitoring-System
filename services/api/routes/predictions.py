@@ -71,7 +71,7 @@ def get_model_status(
 )
 async def assess_patient_telemetry(
     payload: TelemetryAssessmentRequest,
-    patient_id: str = Path(..., min_length=1, max_length=32, description="Target patient identifier (e.g., P101)"),
+    patient_id: str = Path(..., min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$", description="Target patient identifier (e.g., P101)"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
@@ -177,7 +177,7 @@ async def assess_patient_telemetry(
     summary="Retrieve paginated historical ML assessments for a patient",
 )
 def list_patient_assessments(
-    patient_id: str = Path(..., min_length=1, max_length=32, description="Target patient identifier (e.g., P101)"),
+    patient_id: str = Path(..., min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$", description="Target patient identifier (e.g., P101)"),
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
     current_user: User = Depends(get_current_user),

@@ -106,6 +106,7 @@ docker build -t smart-health-api:3.0.0 -f Dockerfile .
 - [MongoDB Analytics Mirror](docs/mongodb_analytics_mirror.md): Transactional outbox pattern, collections, and disaster recovery.
 - [Real-Time WebSockets](docs/realtime_websockets.md): WebSocket handshake, connection lifecycle, and authorization.
 - [Clinical Messaging System](docs/messaging_system.md): End-to-end patient-clinician messaging and read tracking.
+- [Live Demo Launcher & Preflight Guide](docs/demo_launcher_guide.md): One-command PowerShell / Python orchestrator, 26-point preflight verification, and safe shutdown.
 
 ---
 
@@ -117,4 +118,85 @@ The complete academic evidence and defense suite is located in [docs/submission/
 - **DA1–DA3 Traceability Matrix:** [docs/submission/07_da1_da3_traceability_matrix.md](docs/submission/07_da1_da3_traceability_matrix.md) (100% compliance mapping)
 - **Release Manifest & Packaging Guide:** [docs/submission/16_release_manifest_and_packaging_guide.md](docs/submission/16_release_manifest_and_packaging_guide.md)
 - **Machine-Readable Manifest:** [RELEASE_MANIFEST.json](RELEASE_MANIFEST.json) (v3.0.0 release specification)
+
+---
+
+## 7. Live Academic Demonstration Runbook (Smartwatch Simulator Controls)
+
+### 7.1 Automated Demo Orchestration & One-Command Launch (Part 6M)
+The entire multi-process demonstration environment can be launched and verified with a single command:
+
+```powershell
+# Automated PowerShell Launcher (Windows)
+powershell -ExecutionPolicy Bypass -File scripts\launch_demo.ps1
+
+# Cross-Platform Python Launcher (Windows / Linux / macOS)
+python scripts/launch_demo.py
+
+# Preflight Diagnostic Verification Only (Checks 26 checkpoints without starting servers)
+python scripts/preflight_check.py
+```
+
+*For complete operational instructions, flags, and troubleshooting, see the [Live Demo Launcher Guide](docs/demo_launcher_guide.md).*
+
+#### Manual Startup Alternative
+To launch services manually in separate terminals:
+
+```bash
+# 1. Smartwatch Telemetry Simulator (Port 8001)
+python -m uvicorn simulator.main:app --host 127.0.0.1 --port 8001
+
+# 2. FastAPI Backend Gateway & Ingestion Worker (Port 8000)
+python -m uvicorn services.api.main:app --host 127.0.0.1 --port 8000
+
+# 3. React + TypeScript Clinician Workstation (Port 5173)
+cd frontend/apps/doctor_web && npx vite --host 127.0.0.1 --port 5173
+
+# 4. Streamlit DA3 Analytics Dashboard (Port 8501, optional)
+python -m streamlit run dashboard/app.py --server.port 8501 --server.headless true
+```
+
+### 7.2 Verification URLs & Access Credentials
+- **Clinician Dashboard:** [http://127.0.0.1:5173](http://127.0.0.1:5173) (Login: `doctor@hospital.org` / `DoctorPassword123!`)
+- **FastAPI OpenAPI Docs:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- **Simulator OpenAPI Docs:** [http://127.0.0.1:8001/docs](http://127.0.0.1:8001/docs)
+- **Streamlit Analytics:** [http://localhost:8501](http://localhost:8501)
+
+### 7.3 Live Demo Presentation Workflow (Start / Stop / Resume)
+
+1. **Pre-Start Baseline Inspection:**
+   - Log into the React Clinician Workstation as Dr. Sarah Jenkins (`doctor@hospital.org`).
+   - Navigate to the **Live Telemetry** panel. Observe the status badge: `Simulator: Stopped` (Grey badge, Start button active).
+   - Point out that all existing patient profiles (`P101`–`P105`), historical vitals, alerts, and messaging threads are fully functional *prior* to starting synthetic generation.
+
+2. **Start Simulated Telemetry:**
+   - Click the green **▶ Start Telemetry** button (or call `POST /api/v1/simulator/start`).
+   - The status badge transitions to `Simulator: Running` (Green badge, Stop button enabled).
+   - Synthetic telemetry for patients `P101`–`P105` is generated every 5 seconds, ingested by the FastAPI ingestion worker, committed to MySQL with `is_simulated = true`, evaluated by the ML Isolation Forest model, and broadcasted via WebSockets.
+   - Sparklines and latest readings update dynamically in real time.
+
+3. **Stop Simulated Telemetry Mid-Stream:**
+   - Click the red **⏹ Stop Telemetry** button (or call `POST /api/v1/simulator/stop`).
+   - The UI immediately disables the button during transition and confirms `Simulator: Stopped` in < 1 second.
+   - *Presenter Explains:* Stopping the simulator ceases synthetic sensor packet generation; it does **not** stop the backend, disconnect clinicians, flush historical readings, or wipe genuine patient profiles.
+
+4. **Verify Telemetry Cessation:**
+   - Wait 7–10 seconds (exceeding the 5-second sampling interval).
+   - Observe that **zero** new readings arrive in the WebSocket feed and the database row count remains static.
+
+5. **Verify Full Application Functionality While Stopped (Service Isolation):**
+   - Click any patient row (e.g. `P101`) to open the Clinical Detail view. All vitals history remains retrievable.
+   - Navigate to the **Alerts** tab: Review existing clinical alerts and acknowledge them.
+   - Navigate to **Messages**: Send a clinical consultation note. The messaging pipeline operates normally.
+   - Navigate to **Streamlit** ([http://localhost:8501](http://localhost:8501)): Query performance benchmarks.
+
+6. **Resume Simulated Telemetry:**
+   - Return to the Clinician Dashboard and click **▶ Start Telemetry** again.
+   - The simulator resumes seamlessly **without requiring a microservice restart**.
+   - Sequence numbers continue monotonically (`sequence_number` strictly increasing), and all event IDs remain globally unique with zero replays.
+
+7. **Data Protection & Provenance:**
+   - `MONGODB_SYNC_ENABLED=false` strictly guarantees zero unauthorized writes to MongoDB Atlas, preventing cloud quota exhaustion.
+   - All synthetic readings carry `is_simulated: true` and `source: "smartwatch_simulator"`, cleanly distinguishing them from Kaggle baseline data.
+
 

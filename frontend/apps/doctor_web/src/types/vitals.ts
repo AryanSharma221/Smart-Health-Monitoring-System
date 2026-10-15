@@ -31,7 +31,7 @@ export type MetricUnit =
  * 'kaggle_csv': 1,500 historical rows across patients P101–P105.
  * 'demo-simulator': Live generated synthetic telemetry stream.
  */
-export type TelemetrySource = 'kaggle_csv' | 'demo-simulator' | 'system_seed';
+export type TelemetrySource = 'kaggle_csv' | 'demo-simulator' | 'smartwatch_simulator' | 'system_seed' | string;
 
 /**
  * Freshness status of telemetry readings.
@@ -43,6 +43,8 @@ export type TelemetrySource = 'kaggle_csv' | 'demo-simulator' | 'system_seed';
 export type FreshnessState = 'fresh' | 'stale' | 'unavailable' | 'disconnected';
 
 export interface VitalsReading {
+  /** Optional telemetry event identifier for idempotency/deduplication */
+  eventId?: string;
   /** Metric identifier */
   metricCode: MetricCode;
   /** Label for display (e.g. "Heart Rate", "Oxygen Saturation") */

@@ -1,0 +1,291 @@
+{
+  "milestone": "Part 6Q Database Consistency and Recovery Audit",
+  "timestamp_utc": "2026-10-14T22:33:12.089092+00:00",
+  "total_checks": 35,
+  "passed": 35,
+  "failed": 0,
+  "unverified": 0,
+  "pass_rate_percent": 100.0,
+  "test_cases": [
+    {
+      "test_id": "FLOW-01-SIM-EMIT",
+      "description": "Simulator emits reading on /api/v1/readings/latest",
+      "status": "PASS",
+      "detail": "Status: 200",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.659871+00:00"
+    },
+    {
+      "test_id": "FLOW-02-SIM-FIELDS",
+      "description": "Emitted reading contains core vitals (HR, SpO2, Temp)",
+      "status": "PASS",
+      "detail": "{'event_id': 'evt_sim_2201_e7e3ac78', 'patient_id': 'P101', 'timestamp': '2026-10-14T22:27:23.447711Z', 'measured_at': '2026-10-14T22:27:23.447711Z', 'source': 'smartwatch_simulator', 'is_simulated': True, 'heart_rate': 85.9, 'spo2': 98.4, 'temperature_f': 98.34, 'temperature_c': 36.86, 'scenario': 'normal', 'state': 'resting', 'sequence_number': 2201}",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.659871+00:00"
+    },
+    {
+      "test_id": "FLOW-03-VALIDATION",
+      "description": "Ingestion validator accepts reading and calculates Celsius",
+      "status": "PASS",
+      "detail": "Error: None",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.659871+00:00"
+    },
+    {
+      "test_id": "FLOW-04-CELSIUS-CONV",
+      "description": "Fahrenheit-to-Celsius conversion exact (37.0 == 37.0)",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.659871+00:00"
+    },
+    {
+      "test_id": "FLOW-05-MYSQL-PERSIST",
+      "description": "Reading persisted to relational store (MySQL/SQLite)",
+      "status": "PASS",
+      "detail": "Outcome: IngestionOutcome.ACCEPTED",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.721619+00:00"
+    },
+    {
+      "test_id": "FLOW-06-EVENT-STORED",
+      "description": "IngestionEvent row created with is_simulated=True",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.722699+00:00"
+    },
+    {
+      "test_id": "FLOW-07-VITALS-STORED",
+      "description": "Normalized VitalsReading rows created for all 3 metrics",
+      "status": "PASS",
+      "detail": "Metrics: {'heart_rate', 'spo2', 'temperature'}",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.724323+00:00"
+    },
+    {
+      "test_id": "FLOW-08-OUTBOX-STAGED",
+      "description": "Reading staged in analytics_outbox with status='pending'",
+      "status": "PASS",
+      "detail": "Status: pending",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.728570+00:00"
+    },
+    {
+      "test_id": "FLOW-09-ALERT-CREATED",
+      "description": "Deterministic alert generated in alerts table",
+      "status": "PASS",
+      "detail": "Rule: RULE_HR_CRITICAL_HIGH",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.729632+00:00"
+    },
+    {
+      "test_id": "FLOW-10-ALERT-STATUS",
+      "description": "Generated alert initialized to NEW status with CRITICAL severity",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.729632+00:00"
+    },
+    {
+      "test_id": "IDEMP-01-INITIAL-INSERT",
+      "description": "Initial event ingestion accepted",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.744195+00:00"
+    },
+    {
+      "test_id": "IDEMP-02-DUPLICATE-SKIPPED",
+      "description": "Re-ingesting identical event_id returns DUPLICATE_SKIPPED",
+      "status": "PASS",
+      "detail": "Outcome: IngestionOutcome.DUPLICATE_SKIPPED",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.745245+00:00"
+    },
+    {
+      "test_id": "IDEMP-03-EVENT-COUNT-ONE",
+      "description": "Exact count of IngestionEvent for ID is 1 (Count: 1)",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.746283+00:00"
+    },
+    {
+      "test_id": "IDEMP-04-VITALS-COUNT-THREE",
+      "description": "Exact count of VitalsReadings for ID is 3 (Count: 3)",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.746815+00:00"
+    },
+    {
+      "test_id": "IDEMP-05-ENGINE-CONSTRAINT",
+      "description": "Database engine UNIQUE constraint (source, source_event_id) physically rejected duplicate insert",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.751025+00:00"
+    },
+    {
+      "test_id": "IDEMP-06-ALERT-IDEMPOTENCY",
+      "description": "Repeated alert evaluation on identical event does not create duplicate alerts",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.754755+00:00"
+    },
+    {
+      "test_id": "CONSIST-01-SOR-AUTHORITY",
+      "description": "MySQL/Relational store acts as authoritative System of Record (SoR)",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.754755+00:00"
+    },
+    {
+      "test_id": "CONSIST-02-ASYNC-MIRROR",
+      "description": "MongoDB Atlas acts as asynchronous read-optimized analytics mirror",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.754755+00:00"
+    },
+    {
+      "test_id": "CONSIST-03-NO-2PC-CLAIM",
+      "description": "Architecture uses Transactional Outbox Pattern; does NOT claim distributed 2PC atomicity",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.754755+00:00"
+    },
+    {
+      "test_id": "CONSIST-04-OUTBOX-PENDING",
+      "description": "Offline sync returns False without raising exception",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.759684+00:00"
+    },
+    {
+      "test_id": "CONSIST-05-OUTBOX-PRESERVED",
+      "description": "Unmirrored event safely retained in MySQL analytics_outbox (status='pending')",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.763458+00:00"
+    },
+    {
+      "test_id": "CONSIST-06-PAYLOAD-STRUCTURE",
+      "description": "Staged outbox payload contains complete telemetry document structure",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.763992+00:00"
+    },
+    {
+      "test_id": "BACKUP-01-MYSQL-DRYRUN",
+      "description": "MySQL backup utility dry-run generates compliant mysqldump command line and manifest",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.767264+00:00"
+    },
+    {
+      "test_id": "BACKUP-02-MYSQL-FLAGS",
+      "description": "mysqldump flags preserve transaction isolation, routines, and triggers",
+      "status": "PASS",
+      "detail": "['--single-transaction', '--quick', '--routines', '--triggers', '--events', '--hex-blob', '--default-character-set=utf8mb4']",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.767264+00:00"
+    },
+    {
+      "test_id": "BACKUP-03-CREATE-ARTIFACT",
+      "description": "Created physical backup artifact file",
+      "status": "PASS",
+      "detail": "Size: 11534336 bytes",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.772053+00:00"
+    },
+    {
+      "test_id": "BACKUP-04-SHA256-DIGEST",
+      "description": "Computed and emitted SHA-256 cryptographic manifest",
+      "status": "PASS",
+      "detail": "SHA-256: 564825e4cf674747...",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.780521+00:00"
+    },
+    {
+      "test_id": "BACKUP-05-RESTORE-ISOLATED",
+      "description": "Restored backup artifact into isolated recovery database",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.783781+00:00"
+    },
+    {
+      "test_id": "BACKUP-06-TABLES-RESTORED",
+      "description": "All required tables restored in recovery database (17 tables)",
+      "status": "PASS",
+      "detail": "['import_batches', 'users', 'alert_rules', 'analytics_outbox', 'patient_profiles', 'doctor_profiles', 'audit_logs', 'doctor_patient_assignments', 'ingestion_events', 'patient_baselines', 'conversations', 'vitals_readings', 'model_assessments', 'messages', 'alerts', 'alert_status_history', 'notification_deliveries']",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.786233+00:00"
+    },
+    {
+      "test_id": "BACKUP-07-DATA-READABLE",
+      "description": "Recovered data verified: Users=6, Patients=5, Vitals=11127",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.787233+00:00"
+    },
+    {
+      "test_id": "BACKUP-08-INDEXES-RESTORED",
+      "description": "Explicit indexes restored in recovery database (Count: 41)",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.787233+00:00"
+    },
+    {
+      "test_id": "PROV-01-SIM-LABELLED",
+      "description": "All simulator ingestion events have is_simulated=True (Sample: 50)",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.790233+00:00"
+    },
+    {
+      "test_id": "PROV-02-KAGGLE-GENUINE",
+      "description": "Historical Kaggle ingestion events have is_simulated=False (Sample: 50)",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.791739+00:00"
+    },
+    {
+      "test_id": "PROV-03-COHORT-ISOLATION",
+      "description": "Simulated data strictly isolated to demo cohort: {'P103', 'P105', 'P104', 'P102', 'P101'}",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:11.791739+00:00"
+    },
+    {
+      "test_id": "PROV-04-STOP-API",
+      "description": "POST /api/v1/simulator/stop returned 200 OK",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:12.088560+00:00"
+    },
+    {
+      "test_id": "PROV-05-STOP-NON-DESTRUCTIVE",
+      "description": "Simulator Stop is non-destructive (Rows before: 11127, Rows after: 11127)",
+      "status": "PASS",
+      "detail": "",
+      "metadata": {},
+      "timestamp": "2026-10-14T22:33:12.089092+00:00"
+    }
+  ]
+}

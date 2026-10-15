@@ -4,6 +4,7 @@ import { useAuth, useDevMode } from '../hooks';
 import {
   fetchLiveDashboardOverview,
   buildFixtureOverviewData,
+  getApiUrl,
   wsManager,
   type DashboardOverviewData,
   type WsStatusSnapshot,
@@ -19,6 +20,7 @@ import {
   RefreshIcon,
   AlertTriangleIcon,
 } from '../components/ui';
+import { LiveTelemetryPanel } from '../features/vitals';
 import styles from './DashboardPage.module.css';
 
 export const DashboardPage: React.FC = () => {
@@ -29,13 +31,32 @@ export const DashboardPage: React.FC = () => {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [data, setData] = useState<DashboardOverviewData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [gatewayStatus, setGatewayStatus] = useState<'probing' | 'online' | 'offline'>('probing');
   const [wsSnapshot, setWsSnapshot] = useState<WsStatusSnapshot>(() => wsManager.getSnapshot());
 
   useEffect(() => {
     const unsubscribe = wsManager.subscribeStatus((snapshot) => {
       setWsSnapshot(snapshot);
     });
-    return unsubscribe;
+
+    if (!isFixtureMode && currentUser) {
+      void wsManager.connect();
+    } else if (isFixtureMode) {
+      wsManager.disconnect();
+    }
+
+    return () => {
+      unsubscribe();
+    };
+  }, [isFixtureMode, currentUser]);
+
+  const probeGateway = useCallback(async () => {
+    try {
+      const res = await fetch(getApiUrl('/health'), { method: 'GET' });
+      setGatewayStatus(res.ok || res.status === 401 || res.status === 403 ? 'online' : 'offline');
+    } catch {
+      setGatewayStatus('offline');
+    }
   }, []);
 
   const fetchDashboardData = useCallback(async (useFixtures: boolean) => {
@@ -50,6 +71,7 @@ export const DashboardPage: React.FC = () => {
 
     async function loadInitial() {
       setError(null);
+      void probeGateway();
       try {
         const result = await fetchDashboardData(isFixtureMode);
         if (!isCancelled) {
@@ -70,11 +92,12 @@ export const DashboardPage: React.FC = () => {
     return () => {
       isCancelled = true;
     };
-  }, [fetchDashboardData, isFixtureMode]);
+  }, [fetchDashboardData, isFixtureMode, probeGateway]);
 
   const handleManualRefresh = async () => {
     setRefreshing(true);
     setError(null);
+    void probeGateway();
     try {
       const refreshed = await fetchDashboardData(isFixtureMode);
       setData(refreshed);
@@ -89,6 +112,7 @@ export const DashboardPage: React.FC = () => {
   const handleRetry = () => {
     setLoading(true);
     setError(null);
+    void probeGateway();
     fetchDashboardData(isFixtureMode)
       .then((res) => {
         setData(res);
@@ -294,6 +318,12 @@ export const DashboardPage: React.FC = () => {
           />
         ) : (
           <>
+            {/* Live Smartwatch Telemetry Surveillance & Time-Series Visualizer */}
+            <LiveTelemetryPanel
+              patientRows={data.patientRows}
+              isFixtureMode={data.isFixtureMode}
+            />
+
             {/* Desktop Table View */}
             <div className={styles.tableResponsive}>
               <table className={styles.table}>
@@ -301,6 +331,7 @@ export const DashboardPage: React.FC = () => {
                   <tr>
                     <th>Patient Identity</th>
                     <th>Latest Available Readings</th>
+                    <th>Data Provenance</th>
                     <th>Feed Freshness</th>
                     <th>Last Measured Time</th>
                     <th>Alert Status</th>
@@ -369,6 +400,23 @@ export const DashboardPage: React.FC = () => {
                         </td>
 
                         <td>
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              padding: '2px 8px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              borderRadius: '4px',
+                              backgroundColor: row.isSimulated ? '#eff6ff' : '#f1f5f9',
+                              color: row.isSimulated ? '#1d4ed8' : '#475569',
+                              border: row.isSimulated ? '1px solid #bfdbfe' : '1px solid #cbd5e1',
+                            }}
+                          >
+                            {row.provenanceLabel || (row.isSimulated ? 'SIMULATED DEMO DATA' : 'HISTORICAL DATASET')}
+                          </span>
+                        </td>
+
+                        <td>
                           <StatusBadge variant={row.feedFreshness} />
                         </td>
 
@@ -414,7 +462,21 @@ export const DashboardPage: React.FC = () => {
                       <span className={styles.patientName}>{row.patient.name}</span>
                       <span className={styles.patientIdTag}>ID: {row.patient.patientId}</span>
                     </div>
-                    <StatusBadge variant={row.feedFreshness} />
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          padding: '1px 6px',
+                          borderRadius: '3px',
+                          backgroundColor: row.isSimulated ? '#eff6ff' : '#f1f5f9',
+                          color: row.isSimulated ? '#1d4ed8' : '#475569',
+                        }}
+                      >
+                        {row.isSimulated ? 'Simulated' : 'Historical'}
+                      </span>
+                      <StatusBadge variant={row.feedFreshness} />
+                    </div>
                   </div>
 
                   <div className={styles.vitalsRow}>
@@ -544,8 +606,22 @@ export const DashboardPage: React.FC = () => {
             <div className={styles.consoleItemHeader}>
               <span className={styles.consoleItemLabel}>REST API Gateway</span>
               <StatusBadge
-                variant={data?.apiConnected ? 'fresh' : 'disconnected'}
-                label={data?.apiConnected ? 'API Connected' : 'Gateway Offline'}
+                variant={
+                  data?.apiConnected || gatewayStatus === 'online'
+                    ? 'fresh'
+                    : gatewayStatus === 'probing'
+                    ? 'info'
+                    : 'disconnected'
+                }
+                label={
+                  data?.apiConnected
+                    ? 'API Connected'
+                    : gatewayStatus === 'online'
+                    ? 'Gateway Online'
+                    : gatewayStatus === 'probing'
+                    ? 'Probing…'
+                    : 'Gateway Offline'
+                }
               />
             </div>
             <span className={styles.consoleItemValue}>http://localhost:8000/api/v1</span>
@@ -568,17 +644,27 @@ export const DashboardPage: React.FC = () => {
                     ? 'advisory'
                     : wsSnapshot.state === 'error'
                     ? 'critical'
+                    : !currentUser
+                    ? 'advisory'
                     : wsSnapshot.state === 'not_configured'
                     ? 'unavailable'
                     : 'disconnected'
                 }
-                label={wsSnapshot.state.toUpperCase()}
+                label={
+                  wsSnapshot.state === 'connected'
+                    ? 'CONNECTED'
+                    : !currentUser
+                    ? 'AWAITING LOGIN'
+                    : wsSnapshot.state.toUpperCase()
+                }
               />
             </div>
             <span className={styles.consoleItemValue}>{wsSnapshot.url}</span>
             <span className={styles.consoleItemDetail}>
               {wsSnapshot.state === 'connected'
                 ? `Active real-time telemetry stream. Last event: ${formatTimestamp(wsSnapshot.lastEventReceivedAt)}`
+                : !currentUser
+                ? 'Ticket-authenticated bidirectional telemetry stream. Clinician login required to open stream.'
                 : 'Ticket-authenticated bidirectional telemetry stream. Diagnostics in System Status.'}
             </span>
           </div>

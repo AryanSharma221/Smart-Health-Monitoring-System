@@ -92,6 +92,7 @@ def test_all_expected_tables_present_in_metadata():
         "messages",
         "audit_logs",
         "analytics_outbox",
+        "evaluation_records",
     }
     actual_tables = set(Base.metadata.tables.keys())
     missing = expected_tables - actual_tables

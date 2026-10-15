@@ -125,11 +125,17 @@ def test_openapi_schema_generation_and_components(contract_settings: Settings):
 
     # Verify Core HTTP API Route Paths exist in OpenAPI
     expected_http_paths = [
+        "/",
         "/health",
         "/health/live",
         "/health/ready",
         "/health/db",
         "/health/mongodb",
+        "/api/v1/health",
+        "/api/v1/health/live",
+        "/api/v1/health/ready",
+        "/api/v1/health/db",
+        "/api/v1/health/mongodb",
         "/api/v1/auth/register",
         "/api/v1/auth/login",
         "/api/v1/auth/me",
@@ -155,45 +161,68 @@ def test_openapi_schema_generation_and_components(contract_settings: Settings):
     assert "/api/v1/ws" in ws_paths, "WebSocket route '/api/v1/ws' must be registered on router"
 
 
-def test_system_health_endpoints_contract(contract_client: TestClient):
-    """Verify system health, liveness, and readiness check responses conform to schemas."""
-    # 1. App health (general overview)
-    resp = contract_client.get("/health")
+def test_root_informational_endpoint_contract(contract_client: TestClient):
+    """Verify GET / returns root system discovery and endpoint navigation index."""
+    resp = contract_client.get("/")
     assert resp.status_code == status.HTTP_200_OK
     data = resp.json()
-    assert data["status"] == "healthy"
-    assert data["service"] == "Smart Health Monitoring System"
-    assert "version" in data
-    assert data["is_simulated"] is True
-    assert "SIMULATED DATA" in data["notice"]
+    assert data["name"] == "Smart Health Monitoring System"
+    assert data["version"] == "3.0.0"
+    assert data["status"] == "online"
+    assert "documentation" in data
+    assert data["documentation"]["swagger_ui"] == "/docs"
+    assert data["documentation"]["openapi_json"] == "/openapi.json"
+    assert "api_endpoints" in data
+    assert data["api_endpoints"]["base_v1"] == "/api/v1"
+    assert data["api_endpoints"]["health_check"] == "/api/v1/health"
+    assert data["api_endpoints"]["websocket_stream"] == "/ws/v1/updates"
+    assert "SIMULATED DATA" in data["disclaimer"]
 
-    # 2. Liveness probe (process running)
-    resp_live = contract_client.get("/health/live")
-    assert resp_live.status_code == status.HTTP_200_OK
-    live_data = resp_live.json()
-    assert live_data["status"] == "alive"
-    assert live_data["service"] == "Smart Health Monitoring System"
 
-    # 3. Readiness probe (authoritative DB operational)
-    resp_ready = contract_client.get("/health/ready")
-    assert resp_ready.status_code == status.HTTP_200_OK
-    ready_data = resp_ready.json()
-    assert ready_data["status"] == "ready"
-    assert ready_data["database"] == "connected"
-    assert "mongodb_mirror" in ready_data
+def test_system_health_endpoints_contract(contract_client: TestClient):
+    """Verify system health, liveness, and readiness check responses conform to schemas."""
+    # 1. App health (general overview - root and versioned /api/v1 parity)
+    for health_path in ["/health", "/api/v1/health"]:
+        resp = contract_client.get(health_path)
+        assert resp.status_code == status.HTTP_200_OK
+        data = resp.json()
+        assert data["status"] == "healthy"
+        assert data["service"] == "Smart Health Monitoring System"
+        assert "version" in data
+        assert data["is_simulated"] is True
+        assert "SIMULATED DATA" in data["notice"]
+
+    # 2. Liveness probe (process running - root and versioned /api/v1 parity)
+    for live_path in ["/health/live", "/api/v1/health/live"]:
+        resp_live = contract_client.get(live_path)
+        assert resp_live.status_code == status.HTTP_200_OK
+        live_data = resp_live.json()
+        assert live_data["status"] == "alive"
+        assert live_data["service"] == "Smart Health Monitoring System"
+
+    # 3. Readiness probe (authoritative DB operational - root and versioned parity)
+    for ready_path in ["/health/ready", "/api/v1/health/ready"]:
+        resp_ready = contract_client.get(ready_path)
+        assert resp_ready.status_code == status.HTTP_200_OK
+        ready_data = resp_ready.json()
+        assert ready_data["status"] == "ready"
+        assert ready_data["database"] == "connected"
+        assert "mongodb_mirror" in ready_data
 
     # 4. DB health
-    resp_db = contract_client.get("/health/db")
-    assert resp_db.status_code == status.HTTP_200_OK
-    db_data = resp_db.json()
-    assert "status" in db_data
+    for db_path in ["/health/db", "/api/v1/health/db"]:
+        resp_db = contract_client.get(db_path)
+        assert resp_db.status_code == status.HTTP_200_OK
+        db_data = resp_db.json()
+        assert "status" in db_data
 
     # 5. MongoDB health
-    resp_mongo = contract_client.get("/health/mongodb")
-    assert resp_mongo.status_code == status.HTTP_200_OK
-    mongo_data = resp_mongo.json()
-    assert "outbox_queue" in mongo_data
-    assert "database" in mongo_data
+    for mongo_path in ["/health/mongodb", "/api/v1/health/mongodb"]:
+        resp_mongo = contract_client.get(mongo_path)
+        assert resp_mongo.status_code == status.HTTP_200_OK
+        mongo_data = resp_mongo.json()
+        assert "outbox_queue" in mongo_data
+        assert "database" in mongo_data
 
 
 def test_readiness_failure_when_authoritative_database_unreachable(

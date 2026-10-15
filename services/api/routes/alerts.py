@@ -61,16 +61,28 @@ def list_alerts(
         )
 
     if current_user.role == "patient":
-        if patient_id and patient_id != current_user.user_id:
+        profile = getattr(current_user, "patient_profile", None)
+        my_patient_id = profile.patient_id if profile else current_user.user_id
+        if patient_id and patient_id != my_patient_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied.")
-        return alert_service.list_alerts(patient_id=current_user.user_id, status=norm_status, limit=limit)
+        return alert_service.list_alerts(patient_id=my_patient_id, status=norm_status, limit=limit)
     elif current_user.role == "doctor":
         if patient_id:
             verify_patient_access(patient_id=patient_id, current_user=current_user, db=db)
             return alert_service.list_alerts(patient_id=patient_id, status=norm_status, limit=limit)
+        doc_profile = None
+        try:
+            doc_profile = current_user.doctor_profile
+        except Exception:
+            pass
+        if not doc_profile:
+            from database.mysql.models import DoctorProfile
+            doc_profile = db.query(DoctorProfile).filter_by(user_id=current_user.user_id).first()
+        if not doc_profile:
+            return []
         from database.mysql.repositories.patient_repository import PatientRepository
         patient_repo = PatientRepository(db)
-        assigned_patients = {p.patient_id for p in patient_repo.get_assigned_patients_for_doctor(current_user.user_id)}
+        assigned_patients = {p.patient_id for p in patient_repo.get_assigned_patients_for_doctor(doc_profile.doctor_id)}
         all_alerts = alert_service.list_alerts(status=norm_status, limit=limit * 2)
         return [a for a in all_alerts if a.patient_id in assigned_patients][:limit]
     elif current_user.role == "admin_operator":
@@ -86,7 +98,7 @@ def list_alerts(
     summary="Retrieve paginated clinical alerts for an authorized patient",
 )
 def get_patient_alerts(
-    patient_id: str = Path(..., min_length=1, max_length=32, description="Target patient identifier (e.g., P101)"),
+    patient_id: str = Path(..., min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$", description="Target patient identifier (e.g., P101)"),
     status_filter: Optional[str] = Query(None, alias="status", description="Filter by status (NEW, ACKNOWLEDGED, RESOLVED)"),
     severity: Optional[str] = Query(None, description="Filter by severity (LOW, MEDIUM, HIGH, CRITICAL)"),
     start_time: Optional[datetime] = Query(None, description="Inclusive start timestamp filter (ISO 8601 UTC)"),
@@ -162,7 +174,7 @@ def get_patient_alerts(
     summary="Retrieve single clinical alert by ID",
 )
 def get_alert_by_id(
-    alert_id: str = Path(..., min_length=1, max_length=64, description="Unique alert identifier"),
+    alert_id: str = Path(..., min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$", description="Unique alert identifier"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AlertResponse:
@@ -191,7 +203,7 @@ def get_alert_by_id(
     summary="Acknowledge an open clinical alert",
 )
 def acknowledge_alert(
-    alert_id: str = Path(..., min_length=1, max_length=64, description="Unique alert identifier"),
+    alert_id: str = Path(..., min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$", description="Unique alert identifier"),
     payload: Optional[AlertAcknowledgeRequest] = Body(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -205,6 +217,12 @@ def acknowledge_alert(
     - If alert is already ACKNOWLEDGED, returns existing alert safely without error.
     - If alert is in RESOLVED status, returns 400 Bad Request (cannot acknowledge a resolved alert).
     """
+    if current_user.role not in ("doctor", "admin_operator"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Only clinicians and administrative operators can acknowledge clinical alerts.",
+        )
+
     alert_service = AlertService(db)
     try:
         alert = alert_service.get_alert(alert_id)
@@ -240,7 +258,7 @@ def acknowledge_alert(
     summary="Resolve a clinical alert",
 )
 def resolve_alert(
-    alert_id: str = Path(..., min_length=1, max_length=64, description="Unique alert identifier"),
+    alert_id: str = Path(..., min_length=1, max_length=64, pattern=r"^[A-Za-z0-9_-]+$", description="Unique alert identifier"),
     payload: Optional[AlertAcknowledgeRequest] = Body(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -253,6 +271,12 @@ def resolve_alert(
       and appends audit log and status history records.
     - If alert is already RESOLVED, returns existing alert safely without error.
     """
+    if current_user.role not in ("doctor", "admin_operator"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Only clinicians and administrative operators can resolve clinical alerts.",
+        )
+
     alert_service = AlertService(db)
     try:
         alert = alert_service.get_alert(alert_id)

@@ -51,22 +51,33 @@ export const VitalTimeSeriesChart: React.FC<VitalTimeSeriesChartProps> = ({
   const chartWidth = svgWidth - padding.left - padding.right;
   const chartHeight = svgHeight - padding.top - padding.bottom;
 
-  // Filter & Sort valid data points chronologically
+  // Filter, Deduplicate & Sort valid data points chronologically
   const sortedValidReadings = useMemo(() => {
-    return readings
-      .filter(
-        (r) =>
-          r.value !== null &&
-          r.value !== undefined &&
-          !isNaN(r.value) &&
-          r.measuredAt !== null &&
-          r.measuredAt !== undefined
-      )
-      .sort((a, b) => {
-        const timeA = new Date(a.measuredAt!).getTime() || 0;
-        const timeB = new Date(b.measuredAt!).getTime() || 0;
-        return timeA - timeB;
-      });
+    const valid = readings.filter(
+      (r) =>
+        r.value !== null &&
+        r.value !== undefined &&
+        !isNaN(r.value) &&
+        r.measuredAt !== null &&
+        r.measuredAt !== undefined
+    );
+
+    // Prevent repeated points from duplicate polling responses (deduplicate by eventId or metric:time:value)
+    const seen = new Set<string>();
+    const deduplicated: VitalsReading[] = [];
+    for (const r of valid) {
+      const key = r.eventId ? `${r.metricCode}:${r.eventId}` : `${r.metricCode}:${r.measuredAt}:${r.value}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        deduplicated.push(r);
+      }
+    }
+
+    return deduplicated.sort((a, b) => {
+      const timeA = new Date(a.measuredAt!).getTime() || 0;
+      const timeB = new Date(b.measuredAt!).getTime() || 0;
+      return timeA - timeB;
+    });
   }, [readings]);
 
   // Compute Scales, Paths, and Points
@@ -126,15 +137,30 @@ export const VitalTimeSeriesChart: React.FC<VitalTimeSeriesChartProps> = ({
       };
     });
 
-    // Build SVG Path strings
-    const pathD = plotted.reduce((acc, pt, i) => {
-      return i === 0 ? `M ${pt.cx.toFixed(1)},${pt.cy.toFixed(1)}` : `${acc} L ${pt.cx.toFixed(1)},${pt.cy.toFixed(1)}`;
-    }, '');
+    // Build SVG Path strings with honest gap detection (no interpolation across gaps > 20 mins)
+    const GAP_THRESHOLD_MS = 20 * 60 * 1000;
+    let pathD = '';
+    let hasGap = false;
+    for (let i = 0; i < plotted.length; i++) {
+      const pt = plotted[i];
+      if (i === 0) {
+        pathD = `M ${pt.cx.toFixed(1)},${pt.cy.toFixed(1)}`;
+      } else {
+        const prevPt = plotted[i - 1];
+        const gap = pt.timeMs - prevPt.timeMs;
+        if (gap > GAP_THRESHOLD_MS) {
+          hasGap = true;
+          pathD += ` M ${pt.cx.toFixed(1)},${pt.cy.toFixed(1)}`;
+        } else {
+          pathD += ` L ${pt.cx.toFixed(1)},${pt.cy.toFixed(1)}`;
+        }
+      }
+    }
 
     const bottomY = padding.top + chartHeight;
     const firstX = plotted[0].cx.toFixed(1);
     const lastX = plotted[plotted.length - 1].cx.toFixed(1);
-    const areaD = `${pathD} L ${lastX},${bottomY} L ${firstX},${bottomY} Z`;
+    const areaD = hasGap ? '' : `${pathD} L ${lastX},${bottomY} L ${firstX},${bottomY} Z`;
 
     // 4 Y-Axis Ticks
     const ticksCountY = 4;
@@ -232,9 +258,9 @@ export const VitalTimeSeriesChart: React.FC<VitalTimeSeriesChartProps> = ({
         {activePoint && (
           <div className={styles.tooltipOverlay} role="tooltip">
             <span className={styles.tooltipProvenance}>
-              {activePoint.reading.source === 'kaggle_csv'
-                ? 'Kaggle Historical Record'
-                : 'Live Simulation Feed'}
+              {activePoint.reading.isSimulated
+                ? 'SIMULATED SMARTWATCH (SYNTHETIC)'
+                : 'KAGGLE HISTORICAL RECORD (ARCHIVE)'}
             </span>
             <div className={styles.tooltipValueRow}>
               <span className={styles.tooltipValue}>

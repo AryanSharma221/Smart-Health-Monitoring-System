@@ -1,0 +1,126 @@
+{
+  "audit_version": "1.0.0",
+  "timestamp_utc": "2026-10-14T23:09:35.357412+00:00",
+  "target_api": "http://127.0.0.1:8000",
+  "environment": "development",
+  "checks": [
+    {
+      "name": "1.1 Unauthenticated Protected Endpoints Return 401",
+      "passed": true,
+      "duration_ms": 31.51,
+      "details": {
+        "endpoints_tested": [
+          {
+            "endpoint": "/api/v1/auth/me",
+            "status_code": 401
+          },
+          {
+            "endpoint": "/api/v1/patients",
+            "status_code": 401
+          },
+          {
+            "endpoint": "/api/v1/patients/P101/readings",
+            "status_code": 401
+          },
+          {
+            "endpoint": "/api/v1/alerts",
+            "status_code": 401
+          },
+          {
+            "endpoint": "/api/v1/conversations",
+            "status_code": 401
+          }
+        ],
+        "verdict": "All protected endpoints require Bearer auth"
+      }
+    },
+    {
+      "name": "1.2 Clinician Login Produces Verified Token",
+      "passed": true,
+      "duration_ms": 251.53,
+      "details": {
+        "user_id": "U_DOC_001",
+        "role": "doctor",
+        "expires_in": 7200
+      }
+    },
+    {
+      "name": "1.3 Clinician Care Assignment Scoping",
+      "passed": true,
+      "duration_ms": 6.79,
+      "details": {
+        "assigned_patient_count": 5,
+        "assigned_sample": [
+          "P101",
+          "P102",
+          "P103",
+          "P104",
+          "P105"
+        ],
+        "verdict": "Clinician receives only active care assigned patients"
+      }
+    },
+    {
+      "name": "2.1 Input Validation & Path Traversal Guards",
+      "passed": true,
+      "duration_ms": 13.82,
+      "details": {
+        "rejections": [
+          {
+            "target": "P101;DROP",
+            "code": 403
+          },
+          {
+            "target": "P101'OR'1'='1",
+            "code": 403
+          },
+          {
+            "target": "../etc/passwd",
+            "code": 404
+          }
+        ],
+        "verdict": "Malformed patient IDs rejected safely"
+      }
+    },
+    {
+      "name": "3.1 Secrets Management & .gitignore Compliance",
+      "passed": true,
+      "duration_ms": 0.45,
+      "details": {
+        "gitignore_verified": true,
+        "secret_patterns_checked": [
+          ".env",
+          "*.key",
+          "*.db"
+        ],
+        "tracked_template_sanitized": true
+      }
+    },
+    {
+      "name": "4.1 Simulator Provenance & Dataset Protection",
+      "passed": true,
+      "duration_ms": 0.04,
+      "details": {
+        "untrusted_source_rejection": "Untrusted provenance source 'kaggle_csv'. Allowed simulator sources: ['demo-simulator', 'smartwatch_simulator', 'wearable_simulator']",
+        "false_simulation_flag_rejection": "Payload must have 'is_simulated': True",
+        "verdict": "Simulator telemetry strictly isolates synthetic provenance"
+      }
+    },
+    {
+      "name": "3.2 MongoDB URI Redaction Verification",
+      "passed": true,
+      "duration_ms": 0.18,
+      "details": {
+        "raw_pattern": "mongodb+srv://<redacted>:<redacted>@...",
+        "sanitized": "mongodb+srv://***:***@cluster0.abcde.mongodb.net/smart_health",
+        "credential_leakage": false
+      }
+    }
+  ],
+  "summary": {
+    "total_checks": 7,
+    "passed": 7,
+    "failed": 0,
+    "pass_rate_percent": 100.0
+  }
+}

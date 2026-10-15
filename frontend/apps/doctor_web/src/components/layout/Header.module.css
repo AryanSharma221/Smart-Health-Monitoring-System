@@ -97,6 +97,14 @@
   flex-shrink: 0;
 }
 
+.connectingDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #f59e0b; /* Amber connecting indicator */
+  flex-shrink: 0;
+}
+
 /* Mode Switcher Button */
 .modeButton {
   display: inline-flex;

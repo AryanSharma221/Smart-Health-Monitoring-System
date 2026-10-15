@@ -32,6 +32,9 @@ const resolveBaseUrl = (): string => {
   if (typeof envUrl === 'string' && envUrl.trim().length > 0) {
     return envUrl.trim().replace(/\/+$/, '');
   }
+  if (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1') {
+    return 'http://127.0.0.1:8000';
+  }
   return 'http://localhost:8000';
 };
 
@@ -42,6 +45,9 @@ const resolveWsUrl = (): string => {
       : getProcessEnv()?.VITE_WS_BASE_URL;
   if (typeof envWs === 'string' && envWs.trim().length > 0) {
     return envWs.trim().replace(/\/+$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location.hostname === '127.0.0.1') {
+    return 'ws://127.0.0.1:8000';
   }
   return 'ws://localhost:8000';
 };
@@ -55,9 +61,17 @@ export const API_CONFIG: Readonly<ApiConfig> = {
 
 /**
  * Helper to construct versioned API route URLs.
+ * Automatically avoids duplicating /api/v1 if already present in endpoint.
  * Example: getApiUrl('/patients') -> 'http://localhost:8000/api/v1/patients'
+ * Example: getApiUrl('/api/v1/evaluation/crud/records') -> 'http://localhost:8000/api/v1/evaluation/crud/records'
  */
 export function getApiUrl(endpoint: string, version: string = 'v1'): string {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  if (cleanEndpoint.startsWith(`/api/${version}/`) || cleanEndpoint === `/api/${version}`) {
+    return `${API_CONFIG.baseUrl}${cleanEndpoint}`;
+  }
+  if (cleanEndpoint.startsWith('/api/')) {
+    return `${API_CONFIG.baseUrl}${cleanEndpoint}`;
+  }
   return `${API_CONFIG.baseUrl}/api/${version}${cleanEndpoint}`;
 }

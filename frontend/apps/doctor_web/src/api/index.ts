@@ -7,4 +7,6 @@ export * from './dashboardService';
 export * from './alertService';
 export * from './messageService';
 export * from './demoService';
+export * from './simulatorService';
 export * from './webSocketService';
+export * from './evaluationService';

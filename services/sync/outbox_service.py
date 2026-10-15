@@ -36,12 +36,22 @@ logger = logging.getLogger(__name__)
 class OutboxSyncService:
     """Coordinates event staging, opportunistic delivery, and batch failure recovery."""
 
-    def __init__(self, session: Session, mongo_db: Optional[Database] = None) -> None:
+    def __init__(
+        self,
+        session: Session,
+        mongo_db: Optional[Database] = None,
+        sync_enabled: Optional[bool] = None,
+    ) -> None:
         self.session = session
-        self.mongo_db = mongo_db
+        if sync_enabled is not None:
+            self.sync_enabled = sync_enabled
+        else:
+            self.sync_enabled = mongo_db is not None
+
+        self.mongo_db = mongo_db if self.sync_enabled else None
         self.outbox_repo = OutboxRepository(session)
-        self.telemetry_repo = TelemetryMirrorRepository(mongo_db) if mongo_db is not None else None
-        self.alert_repo = AlertMirrorRepository(mongo_db) if mongo_db is not None else None
+        self.telemetry_repo = TelemetryMirrorRepository(self.mongo_db) if self.mongo_db is not None else None
+        self.alert_repo = AlertMirrorRepository(self.mongo_db) if self.mongo_db is not None else None
 
     def stage_telemetry(self, event: IngestionEvent) -> AnalyticsOutbox:
         """Stage an IngestionEvent into the analytics outbox within the current transaction."""
@@ -66,14 +76,14 @@ class OutboxSyncService:
     def sync_telemetry_immediate(self, event: IngestionEvent) -> bool:
         """
         Stage event and attempt immediate opportunistic write to MongoDB Atlas.
-        If MongoDB is offline or fails, the event remains pending in outbox.
+        If MongoDB is offline, disabled, or fails, the event remains pending in outbox.
         MySQL success is never aborted due to MongoDB mirror issues.
         """
         outbox_entry = self.stage_telemetry(event)
 
-        if self.telemetry_repo is None or self.mongo_db is None:
+        if not self.sync_enabled or self.telemetry_repo is None or self.mongo_db is None:
             logger.debug(
-                "MongoDB not available; telemetry event %s queued in outbox (pending).",
+                "MongoDB Atlas sync disabled or unavailable; telemetry event %s queued in outbox (pending).",
                 event.event_id,
             )
             return False
@@ -107,9 +117,9 @@ class OutboxSyncService:
         """
         outbox_entry = self.stage_alert(alert)
 
-        if self.alert_repo is None or self.mongo_db is None:
+        if not self.sync_enabled or self.alert_repo is None or self.mongo_db is None:
             logger.debug(
-                "MongoDB not available; alert %s queued in outbox (pending).",
+                "MongoDB Atlas sync disabled or unavailable; alert %s queued in outbox (pending).",
                 alert.alert_id,
             )
             return False
@@ -141,9 +151,10 @@ class OutboxSyncService:
         Process a batch of pending or retryable outbox entries.
         Recovers from transient outages and replays unmirrored events.
         """
-        if self.mongo_db is None:
+        if not self.sync_enabled or self.mongo_db is None:
+            status_desc = "sync_disabled" if (self.mongo_db is not None and not self.sync_enabled) else "mongodb_unavailable"
             return {
-                "status": "mongodb_unavailable",
+                "status": status_desc,
                 "processed": 0,
                 "succeeded": 0,
                 "failed": 0,

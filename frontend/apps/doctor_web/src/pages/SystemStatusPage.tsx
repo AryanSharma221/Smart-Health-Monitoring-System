@@ -1,5 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { API_CONFIG, getApiUrl, wsManager, getPersistedSession, type WsStatusSnapshot } from '../api';
+import {
+  API_CONFIG,
+  getApiUrl,
+  wsManager,
+  getPersistedSession,
+  fetchSimulatorStatus,
+  startSimulator,
+  stopSimulator,
+  type WsStatusSnapshot,
+} from '../api';
 import { useAuth } from '../auth';
 import { useDevMode } from '../hooks';
 import {
@@ -29,6 +38,24 @@ interface MLStatusResult {
   errorDetail: string | null;
 }
 
+interface SimulatorStatusResult {
+  status: 'untested' | 'probing' | 'streaming' | 'offline' | 'disabled';
+  enabled: boolean;
+  running: boolean;
+  lastPollSucceeded: boolean | null;
+  lastPollTimestamp: string | null;
+  lastSuccessfulPollTimestamp: string | null;
+  eventsReceived: number;
+  eventsAccepted: number;
+  eventsDuplicatesSkipped: number;
+  eventsRejected: number;
+  cursor: string | null;
+  simulatorUrl: string | null;
+  generatorState?: string;
+  errorCategory: string | null;
+  errorDetail: string | null;
+}
+
 export const SystemStatusPage: React.FC = () => {
   const { currentUser, isAuthenticated } = useAuth();
   const { isFixtureMode } = useDevMode();
@@ -52,6 +79,24 @@ export const SystemStatusPage: React.FC = () => {
     algorithm: null,
     featureCount: null,
     hasBaselineManager: false,
+    errorDetail: null,
+  });
+
+  // Smartwatch Simulator Ingestion Subsystem Probe State
+  const [simulatorResult, setSimulatorResult] = useState<SimulatorStatusResult>({
+    status: 'untested',
+    enabled: false,
+    running: false,
+    lastPollSucceeded: null,
+    lastPollTimestamp: null,
+    lastSuccessfulPollTimestamp: null,
+    eventsReceived: 0,
+    eventsAccepted: 0,
+    eventsDuplicatesSkipped: 0,
+    eventsRejected: 0,
+    cursor: null,
+    simulatorUrl: null,
+    errorCategory: null,
     errorDetail: null,
   });
 
@@ -174,6 +219,95 @@ export const SystemStatusPage: React.FC = () => {
         hasBaselineManager: false,
         errorDetail: 'ML inference subsystem offline.',
       });
+    }
+
+    // 3. Probe Smartwatch Simulator Ingestion Subsystem
+    try {
+      const statusData = await fetchSimulatorStatus();
+      const sim = statusData.simulator;
+      const ing = statusData.ingestion;
+
+      let simStatus: SimulatorStatusResult['status'] = 'disabled';
+      if (ing?.enabled) {
+        if (ing.last_poll_succeeded) {
+          simStatus = 'streaming';
+        } else if (ing.last_poll_succeeded === false) {
+          simStatus = 'offline';
+        } else {
+          simStatus = 'probing';
+        }
+      }
+      setSimulatorResult({
+        status: simStatus,
+        enabled: !!ing?.enabled,
+        running: !!ing?.running,
+        generatorState: sim?.lifecycle_state || (sim?.is_running ? 'RUNNING' : 'STOPPED'),
+        lastPollSucceeded: ing?.last_poll_succeeded ?? null,
+        lastPollTimestamp: ing?.last_poll_timestamp ?? null,
+        lastSuccessfulPollTimestamp: ing?.last_successful_poll_timestamp ?? null,
+        eventsReceived: ing?.events_received_count || 0,
+        eventsAccepted: ing?.events_accepted_count || 0,
+        eventsDuplicatesSkipped: ing?.events_duplicates_skipped_count || 0,
+        eventsRejected: ing?.events_rejected_count || 0,
+        cursor: ing?.current_cursor ?? null,
+        simulatorUrl: ing?.simulator_base_url ?? null,
+        errorCategory: ing?.last_error_category ?? null,
+        errorDetail: ing?.last_error_detail ?? null,
+      });
+    } catch {
+      try {
+        const simUrl = getApiUrl('/simulator/ingestion-status');
+        const simResp = await fetch(simUrl, {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+          signal: controller.signal,
+        });
+
+        if (simResp.ok) {
+          const simData = await simResp.json();
+          let simStatus: SimulatorStatusResult['status'] = 'disabled';
+          if (simData.enabled) {
+            if (simData.last_poll_succeeded) {
+              simStatus = 'streaming';
+            } else if (simData.last_poll_succeeded === false) {
+              simStatus = 'offline';
+            } else {
+              simStatus = 'probing';
+            }
+          }
+          setSimulatorResult({
+            status: simStatus,
+            enabled: !!simData.enabled,
+            running: !!simData.running,
+            generatorState: 'UNKNOWN',
+            lastPollSucceeded: simData.last_poll_succeeded,
+            lastPollTimestamp: simData.last_poll_timestamp,
+            lastSuccessfulPollTimestamp: simData.last_successful_poll_timestamp,
+            eventsReceived: simData.events_received_count || 0,
+            eventsAccepted: simData.events_accepted_count || 0,
+            eventsDuplicatesSkipped: simData.events_duplicates_skipped_count || 0,
+            eventsRejected: simData.events_rejected_count || 0,
+            cursor: simData.current_cursor,
+            simulatorUrl: simData.simulator_base_url,
+            errorCategory: simData.last_error_category,
+            errorDetail: simData.last_error_detail,
+          });
+        } else {
+          setSimulatorResult((prev) => ({
+            ...prev,
+            status: 'offline',
+            errorCategory: 'http_error',
+            errorDetail: `Simulator status returned HTTP ${simResp.status}`,
+          }));
+        }
+      } catch {
+        setSimulatorResult((prev) => ({
+          ...prev,
+          status: 'offline',
+          errorCategory: 'connection_error',
+          errorDetail: 'Simulator ingestion subsystem offline or unreachable.',
+        }));
+      }
     } finally {
       clearTimeout(timeoutId);
     }
@@ -192,6 +326,35 @@ export const SystemStatusPage: React.FC = () => {
       isCancelled = true;
     };
   }, [handleProbeGateway]);
+
+  // Simulator generator start/stop actions
+  const [simOperating, setSimOperating] = useState(false);
+
+  const handleStartSimulator = async () => {
+    if (simOperating) return;
+    setSimOperating(true);
+    try {
+      await startSimulator();
+      await handleProbeGateway();
+    } catch (err) {
+      console.error('Failed to start simulator:', err);
+    } finally {
+      setSimOperating(false);
+    }
+  };
+
+  const handleStopSimulator = async () => {
+    if (simOperating) return;
+    setSimOperating(true);
+    try {
+      await stopSimulator();
+      await handleProbeGateway();
+    } catch (err) {
+      console.error('Failed to stop simulator:', err);
+    } finally {
+      setSimOperating(false);
+    }
+  };
 
   // WebSocket manual toggle actions
   const handleConnectWs = async () => {
@@ -480,6 +643,83 @@ export const SystemStatusPage: React.FC = () => {
               </p>
               <div style={{ marginTop: '6px', fontSize: '11px', color: 'var(--color-text-muted)' }}>
                 <strong>Zero Direct DB Access:</strong> Web browser client has zero network access to MongoDB Atlas cluster. All telemetry ingest and queries are proxied via FastAPI.
+              </div>
+            </div>
+          </div>
+
+          {/* Card 5: Smartwatch Sensor Simulator Ingestion Pipeline */}
+          <div className={styles.gatewayCard}>
+            <div className={styles.gatewayHeader}>
+              <span className={styles.gatewayName}>Smartwatch Simulator Ingestion</span>
+              {simulatorResult.status === 'streaming' ? (
+                <StatusBadge variant="fresh" label="STREAM INGESTING" />
+              ) : simulatorResult.status === 'disabled' ? (
+                <StatusBadge variant="unavailable" label="INGESTION DISABLED" />
+              ) : simulatorResult.status === 'probing' ? (
+                <StatusBadge variant="info" label="PROBING…" />
+              ) : (
+                <StatusBadge variant="disconnected" label="SIMULATOR OFFLINE" />
+              )}
+            </div>
+            <div className={styles.endpointUrl}>
+              {simulatorResult.simulatorUrl || 'http://127.0.0.1:8001'}
+            </div>
+            <div className={styles.gatewayDetails}>
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>Generator State:</span>
+                <span className={styles.detailValue}>
+                  {simulatorResult.generatorState || (simulatorResult.running ? 'RUNNING' : 'STOPPED')}
+                </span>
+              </div>
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>Worker State:</span>
+                <span className={styles.detailValue}>
+                  {simulatorResult.running ? 'Active Background Poller' : simulatorResult.enabled ? 'Enabled (Idle)' : 'Disabled by Config'}
+                </span>
+              </div>
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>Events Ingested:</span>
+                <span className={styles.detailValue}>
+                  {simulatorResult.eventsAccepted} accepted ({simulatorResult.eventsDuplicatesSkipped} dupes skipped)
+                </span>
+              </div>
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>Stream Cursor:</span>
+                <span className={styles.detailValue}>
+                  {simulatorResult.cursor ? `${simulatorResult.cursor.slice(0, 18)}…` : '— (Initial)'}
+                </span>
+              </div>
+              <div className={styles.detailRow}>
+                <span className={styles.detailLabel}>Last Ingestion:</span>
+                <span className={styles.detailValue}>
+                  {formatTimestamp(simulatorResult.lastSuccessfulPollTimestamp || simulatorResult.lastPollTimestamp)}
+                </span>
+              </div>
+              {simulatorResult.errorDetail && simulatorResult.status === 'offline' && (
+                <div style={{ color: 'var(--color-critical-text)', fontSize: '11px', marginTop: '4px' }}>
+                  {simulatorResult.errorDetail}
+                </div>
+              )}
+              <div style={{ marginTop: 'auto', paddingTop: '10px', display: 'flex', gap: '8px' }}>
+                {simulatorResult.generatorState === 'RUNNING' ? (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleStopSimulator}
+                    disabled={simOperating}
+                  >
+                    {simOperating ? 'Pausing…' : 'Pause Generator'}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleStartSimulator}
+                    disabled={simOperating}
+                  >
+                    {simOperating ? 'Starting…' : 'Start Generator'}
+                  </Button>
+                )}
               </div>
             </div>
           </div>

@@ -31,12 +31,47 @@ def render_system_status_section(
     outbox_data = fetch_outbox_statistics(force_fallback=force_fallback)
     overview = fetch_dataset_overview(backend=backend, force_fallback=force_fallback)
 
-    # 2. Connectivity Cards
+    # 2. Application Gateways & Telemetry Transport
+    st.markdown("##### Application Gateway & Telemetry Transport")
+    col_gw1, col_gw2, col_gw3 = st.columns(3)
+
+    with col_gw1:
+        api_ok = connectivity.get("api_connected", False)
+        render_metric_card(
+            label="REST API Gateway (FastAPI)",
+            value="ONLINE" if api_ok else "OFFLINE",
+            delta=connectivity.get("api_status", "--"),
+            delta_color="normal" if api_ok else "inverse",
+            help_text=f"Primary HTTP REST API gateway at {connectivity.get('api_url', 'http://localhost:8000/api/v1')}.",
+        )
+
+    with col_gw2:
+        ws_ok = connectivity.get("ws_connected", False)
+        render_metric_card(
+            label="WebSocket Stream (Real-Time Push)",
+            value="LISTENING" if ws_ok else "DISCONNECTED",
+            delta=connectivity.get("ws_status", "--"),
+            delta_color="normal" if ws_ok else "inverse",
+            help_text=f"Real-time bidirectional WebSocket at {connectivity.get('ws_url', 'ws://localhost:8000/ws/v1/updates')}.",
+        )
+
+    with col_gw3:
+        sim_ok = connectivity.get("sim_connected", False)
+        sim_status_str = connectivity.get("sim_status", "--")
+        render_metric_card(
+            label="Smartwatch Simulator (Port 8001)",
+            value="STREAMING" if sim_ok else ("DISABLED" if "Disabled" in sim_status_str else "OFFLINE"),
+            delta=sim_status_str,
+            delta_color="normal" if sim_ok else ("off" if "Disabled" in sim_status_str else "inverse"),
+            help_text="Background continuous ingestion worker polling synthetic telemetry from standalone simulator.",
+        )
+
+    st.markdown("##### Persistence & Analytics Storage")
+    # 3. Database Connectivity Cards
     col_c1, col_c2, col_c3 = st.columns(3)
 
     with col_c1:
         my_ok = connectivity.get("mysql_connected", False)
-        my_stat = "success" if my_ok else "danger"
         render_metric_card(
             label="MySQL 8 (Authoritative Store)",
             value="ONLINE" if my_ok else "OFFLINE",
@@ -47,7 +82,6 @@ def render_system_status_section(
 
     with col_c2:
         mo_ok = connectivity.get("mongo_connected", False)
-        mo_stat = "success" if mo_ok else "warning"
         render_metric_card(
             label="MongoDB Atlas (Analytics Mirror)",
             value="ONLINE" if mo_ok else "DEGRADED",

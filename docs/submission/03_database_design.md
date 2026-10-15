@@ -11,9 +11,81 @@
 
 ## 1. Relational Architecture (MySQL 8 InnoDB)
 
-The relational schema is implemented in `database/mysql/schema.sql` and managed via Alembic migrations (`alembic/versions/`). It comprises 17 fully normalized tables enforcing strict ACID semantics, declarative constraints, and database-level procedural logic.
+### 1.1 Entity-Relationship (ER / EER) Conceptual Diagram
 
-### 1.1 Table Catalog & Structural Integrity
+```mermaid
+erDiagram
+    users ||--o| patient_profiles : "1:0..1 has profile"
+    users ||--o| doctor_profiles : "1:0..1 has profile"
+    users ||--o{ audit_logs : "1:N actor"
+    users ||--o{ alerts : "1:N acknowledges"
+    users ||--o{ alert_status_history : "1:N changes"
+    users ||--o{ notification_deliveries : "1:N receives"
+    users ||--o{ messages : "1:N sends"
+
+    doctor_profiles ||--o{ doctor_patient_assignments : "1:N assigns"
+    patient_profiles ||--o{ doctor_patient_assignments : "1:N assigned to"
+
+    patient_profiles ||--o{ vitals_readings : "1:N records"
+    patient_profiles ||--o| patient_baselines : "1:1 baseline"
+    patient_profiles ||--o{ model_assessments : "1:N assessed"
+    patient_profiles ||--o{ alerts : "1:N generates"
+    patient_profiles ||--o{ conversations : "1:N initiates"
+    doctor_profiles ||--o{ conversations : "1:N attends"
+    conversations ||--o{ messages : "1:N contains"
+
+    import_batches ||--o{ ingestion_events : "1:N batches"
+    ingestion_events ||--o{ vitals_readings : "1:N ingests"
+
+    vitals_readings ||--o{ alerts : "1:N triggers"
+    vitals_readings ||--o{ model_assessments : "1:N scores"
+
+    alerts ||--o{ alert_status_history : "1:N tracks"
+    alerts ||--o{ notification_deliveries : "1:N dispatches"
+
+    users {
+        int id PK
+        string email UK
+        string role "CHECK"
+        string hashed_password
+        datetime created_at
+    }
+    patient_profiles {
+        int id PK
+        int user_id FK
+        string gender "CHECK"
+        float height
+        float weight
+        boolean is_active
+    }
+    doctor_profiles {
+        int id PK
+        int user_id FK
+        string license_number UK
+        string specialization
+    }
+    vitals_readings {
+        bigint id PK
+        int patient_id FK
+        string event_id FK
+        float heart_rate "CHECK"
+        float spo2 "CHECK"
+        float systolic_bp "CHECK"
+        float diastolic_bp "CHECK"
+        float temperature "CHECK"
+        datetime recorded_at
+    }
+    alerts {
+        bigint id PK
+        int patient_id FK
+        bigint reading_id FK
+        string severity "CHECK"
+        string status "CHECK"
+        datetime created_at
+    }
+```
+
+### 1.2 Table Catalog & Structural Integrity
 
 | Table Name | Primary Key | Foreign Keys & Cascades | Domain Constraints (`CHECK`) | Indexes & Optimizations |
 |---|---|---|---|---|
@@ -37,7 +109,7 @@ The relational schema is implemented in `database/mysql/schema.sql` and managed 
 
 ---
 
-### 1.2 Formal Relational Normalization Analysis (3NF / BCNF)
+### 1.3 Formal Relational Normalization Analysis (3NF / BCNF)
 
 To eliminate update, insertion, and deletion anomalies, the relational schema enforces strict Third Normal Form (3NF) and Boyce-Codd Normal Form (BCNF):
 
@@ -57,7 +129,7 @@ To eliminate update, insertion, and deletion anomalies, the relational schema en
 
 ---
 
-### 1.3 Database-Side Procedural Logic
+### 1.4 Database-Side Procedural Logic
 
 To offload computational overhead and guarantee atomic consistency directly inside the database engine, MySQL implements stored functions, views, stored procedures, and triggers:
 
