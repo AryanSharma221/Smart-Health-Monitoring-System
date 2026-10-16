@@ -693,6 +693,25 @@ class DemoSQLExecutionService:
                 message=f"ML service notice: {ml_exc}",
             )
 
+        # 3. Synchronize to MongoDB Atlas if MONGODB_SYNC_ENABLED is true
+        try:
+            from services.api.config import get_settings
+            from database.mongodb.client import get_mongo_database
+            from services.sync.outbox_service import OutboxSyncService
+            app_settings = get_settings()
+            if app_settings.mongodb_sync_enabled:
+                mongo_db = get_mongo_database(app_settings)
+                if mongo_db is not None:
+                    outbox_svc = OutboxSyncService(db, mongo_db, sync_enabled=True)
+                    outbox_svc.sync_telemetry_immediate(event)
+                    if persisted_ml_alert:
+                        outbox_svc.sync_alert_immediate(persisted_ml_alert)
+                    for ra in rule_alerts:
+                        outbox_svc.sync_alert_immediate(ra)
+                    db.commit()
+        except Exception as mongo_sync_exc:
+            logger.warning("MongoDB outbox sync notice for demo SQL reading: %s", mongo_sync_exc)
+
         elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
         columns = [
             "reading_id", "event_id", "patient_id", "metric_code",
@@ -952,6 +971,21 @@ class DemoSQLExecutionService:
                 db.query(IngestionEvent).filter(IngestionEvent.event_id == eid).delete(synchronize_session=False)
 
             db.commit()
+
+            # Clean up mirrored events in MongoDB Atlas if enabled
+            try:
+                from services.api.config import get_settings
+                from database.mongodb.client import get_mongo_database
+                app_settings = get_settings()
+                if app_settings.mongodb_sync_enabled:
+                    mongo_db = get_mongo_database(app_settings)
+                    if mongo_db is not None:
+                        for eid in affected_event_ids:
+                            mongo_db["telemetry_events"].delete_one({"_id": str(eid)})
+                            mongo_db["alert_events"].delete_many({"event_id": str(eid)})
+            except Exception as mongo_del_exc:
+                logger.warning("MongoDB delete cleanup notice: %s", mongo_del_exc)
+
             elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
             return SQLWorkbenchExecuteResponse(
                 status="success",

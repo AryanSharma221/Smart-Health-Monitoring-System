@@ -125,7 +125,7 @@ def main():
         stderr=st_err,
     )
     processes.append(p_st)
-    wait_healthy("http://localhost:8501/_stcore/health", "Streamlit Dashboard")
+    wait_healthy("http://127.0.0.1:8501/_stcore/health", "Streamlit Dashboard")
 
     print("\n" + "=" * 70)
     print("ALL 4 DEMONSTRATION MICROSERVICES ARE LIVE & HEALTHY")
@@ -134,7 +134,7 @@ def main():
     print("     Credentials             : doctor@hospital.org / DoctorPassword123!")
     print("  2. FastAPI Gateway & Docs  : http://127.0.0.1:8000/docs")
     print("  3. Simulator Microservice  : http://127.0.0.1:8001/api/v1/simulator/status")
-    print("  4. Streamlit Analytics     : http://localhost:8501")
+    print("  4. Streamlit Analytics     : http://127.0.0.1:8501")
     print("=" * 70)
 
     # Keep alive
