@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth, useDevMode } from '../../hooks';
-import { wsManager, type WsStatusSnapshot } from '../../api';
+import {
+  wsManager,
+  type WsStatusSnapshot,
+  fetchSimulatorStatus,
+  startSimulator,
+  stopSimulator,
+  type SimulatorLifecycleState,
+} from '../../api';
 import { MenuIcon, BellIcon } from '../ui/Icons';
 import styles from './Header.module.css';
 
@@ -49,7 +56,66 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMenu, isMenuOpen }) => {
   const { currentUser } = useAuth();
   const { isFixtureMode, toggleFixtureMode } = useDevMode();
   const [wsSnapshot, setWsSnapshot] = useState<WsStatusSnapshot>(() => wsManager.getSnapshot());
+  const [simState, setSimState] = useState<SimulatorLifecycleState | 'UNKNOWN'>('UNKNOWN');
+  const [simTransitioning, setSimTransitioning] = useState<boolean>(false);
   const meta = resolveRouteMeta(location.pathname);
+
+  // Poll simulator status periodically and sync across components
+  const pollSimStatus = React.useCallback(async () => {
+    try {
+      const res = await fetchSimulatorStatus();
+      if (res && res.simulator) {
+        setSimState(res.simulator.lifecycle_state || (res.simulator.is_running ? 'RUNNING' : 'STOPPED'));
+      }
+    } catch {
+      setSimState('UNKNOWN');
+    }
+  }, []);
+
+  useEffect(() => {
+    void pollSimStatus();
+    const interval = setInterval(() => {
+      void pollSimStatus();
+    }, 4000);
+
+    const handleCustomChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ state: SimulatorLifecycleState }>;
+      if (customEvent.detail?.state) {
+        setSimState(customEvent.detail.state);
+      } else {
+        void pollSimStatus();
+      }
+    };
+
+    window.addEventListener('simulator-state-changed', handleCustomChange);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('simulator-state-changed', handleCustomChange);
+    };
+  }, [pollSimStatus]);
+
+  const handleToggleSimulator = async () => {
+    if (simTransitioning) return;
+    setSimTransitioning(true);
+    try {
+      if (simState === 'RUNNING') {
+        const res = await stopSimulator();
+        const newState = res.lifecycle_state || 'STOPPED';
+        setSimState(newState);
+        window.dispatchEvent(new CustomEvent('simulator-state-changed', { detail: { state: newState } }));
+      } else {
+        const res = await startSimulator();
+        const newState = res.lifecycle_state || 'RUNNING';
+        setSimState(newState);
+        window.dispatchEvent(new CustomEvent('simulator-state-changed', { detail: { state: newState } }));
+      }
+    } catch (err) {
+      console.error('Failed to toggle simulator:', err);
+    } finally {
+      setSimTransitioning(false);
+    }
+  };
 
   useEffect(() => {
     const unsub = wsManager.subscribeStatus((snap) => {
@@ -102,6 +168,40 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMenu, isMenuOpen }) => {
             aria-hidden="true"
           />
           <span>{isFixtureMode ? 'DEMO MODE — SIMULATED DATA' : 'Live Gateway'}</span>
+        </button>
+
+        {/* Synthetic Telemetry Data Generation Start/Stop Control */}
+        <button
+          type="button"
+          onClick={() => void handleToggleSimulator()}
+          disabled={simTransitioning}
+          className={`${styles.simButton} ${
+            simState === 'RUNNING' ? styles.simButtonRunning : styles.simButtonStopped
+          }`}
+          title={
+            simState === 'RUNNING'
+              ? 'Wearable telemetry generator is ACTIVE. Click to stop synthetic data generation.'
+              : 'Wearable telemetry generator is STOPPED. Click to start synthetic data generation.'
+          }
+          aria-label={
+            simState === 'RUNNING'
+              ? 'Stop synthetic telemetry data generation'
+              : 'Start synthetic telemetry data generation'
+          }
+        >
+          <span
+            className={simState === 'RUNNING' ? styles.simPulseDot : styles.simStoppedDot}
+            aria-hidden="true"
+          />
+          <span>
+            {simTransitioning
+              ? simState === 'RUNNING'
+                ? 'Stopping…'
+                : 'Starting…'
+              : simState === 'RUNNING'
+              ? 'Stop Data Gen'
+              : 'Start Data Gen'}
+          </span>
         </button>
 
         {/* Backend connectivity & WebSocket indicator */}

@@ -284,7 +284,6 @@ export const LiveTelemetryPanel: React.FC<LiveTelemetryPanelProps> = ({
 
   // Poll simulator status periodically
   const refreshSimulator = useCallback(async () => {
-    if (isFixtureMode) return;
     try {
       const res = await fetchSimulatorStatus();
       if (mountedRef.current && res && res.simulator) {
@@ -300,17 +299,31 @@ export const LiveTelemetryPanel: React.FC<LiveTelemetryPanelProps> = ({
         setSimState('UNKNOWN');
       }
     }
-  }, [isFixtureMode]);
+  }, []);
 
   useEffect(() => {
     void refreshSimulator();
-    if (pollIntervalSeconds <= 0 || isFixtureMode) return;
+    if (pollIntervalSeconds <= 0) return;
     const intervalMs = Math.max(3, pollIntervalSeconds) * 1000;
     const timer = setInterval(() => {
       void refreshSimulator();
     }, intervalMs);
-    return () => clearInterval(timer);
-  }, [refreshSimulator, pollIntervalSeconds, isFixtureMode]);
+
+    const handleCustomChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ state: SimulatorLifecycleState }>;
+      if (customEvent.detail?.state && mountedRef.current) {
+        setSimState(customEvent.detail.state);
+      } else {
+        void refreshSimulator();
+      }
+    };
+    window.addEventListener('simulator-state-changed', handleCustomChange);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('simulator-state-changed', handleCustomChange);
+    };
+  }, [refreshSimulator, pollIntervalSeconds]);
 
   const handleStartSim = async () => {
     if (simTransitioning) return;
@@ -318,10 +331,12 @@ export const LiveTelemetryPanel: React.FC<LiveTelemetryPanelProps> = ({
     setSimActionError(null);
     try {
       const res = await startSimulator();
+      const newState = res.lifecycle_state || 'RUNNING';
       if (mountedRef.current) {
-        setSimState(res.lifecycle_state || 'RUNNING');
+        setSimState(newState);
         void fetchTelemetry(false);
       }
+      window.dispatchEvent(new CustomEvent('simulator-state-changed', { detail: { state: newState } }));
     } catch (err: unknown) {
       if (mountedRef.current) {
         setSimActionError(err instanceof Error ? err.message : 'Failed to start simulator.');
@@ -339,9 +354,11 @@ export const LiveTelemetryPanel: React.FC<LiveTelemetryPanelProps> = ({
     setSimActionError(null);
     try {
       const res = await stopSimulator();
+      const newState = res.lifecycle_state || 'STOPPED';
       if (mountedRef.current) {
-        setSimState(res.lifecycle_state || 'STOPPED');
+        setSimState(newState);
       }
+      window.dispatchEvent(new CustomEvent('simulator-state-changed', { detail: { state: newState } }));
     } catch (err: unknown) {
       if (mountedRef.current) {
         setSimActionError(err instanceof Error ? err.message : 'Failed to stop simulator.');
@@ -508,153 +525,149 @@ export const LiveTelemetryPanel: React.FC<LiveTelemetryPanelProps> = ({
       )}
 
       {/* Simulator Lifecycle Control Bar */}
-      {!isFixtureMode && (
-        <div className={styles.simulatorControlBar}>
-          <div className={styles.simulatorInfo}>
-            <span className={styles.simulatorLabel}>Simulator Engine:</span>
-            <StatusBadge
-              variant={
-                simState === 'RUNNING'
-                  ? 'fresh'
-                  : simState === 'STOPPED' || simState === 'STOPPING'
-                  ? 'advisory'
-                  : 'unavailable'
-              }
-              label={
-                simState === 'RUNNING'
-                  ? 'GENERATING TELEMETRY'
-                  : simState === 'STOPPED'
-                  ? 'PAUSED / STOPPED'
-                  : simState === 'STOPPING'
-                  ? 'STOPPING...'
-                  : simState === 'UNKNOWN'
-                  ? 'NOT REACHABLE'
-                  : simState
-              }
-            />
-            {simLatestGen && (
-              <span className={styles.simulatorTimestamp}>
-                Last Generated: {formatTimestamp(simLatestGen)}
-              </span>
-            )}
-            <span className={styles.simulatorHint}>
-              (Controls wearable sensor feed only; backend &amp; clinical DB remain active)
+      <div className={styles.simulatorControlBar}>
+        <div className={styles.simulatorInfo}>
+          <span className={styles.simulatorLabel}>Data Generation:</span>
+          <StatusBadge
+            variant={
+              simState === 'RUNNING'
+                ? 'fresh'
+                : simState === 'STOPPED' || simState === 'STOPPING'
+                ? 'advisory'
+                : 'unavailable'
+            }
+            label={
+              simState === 'RUNNING'
+                ? 'GENERATING TELEMETRY'
+                : simState === 'STOPPED'
+                ? 'STOPPED / IDLE'
+                : simState === 'STOPPING'
+                ? 'STOPPING...'
+                : simState === 'UNKNOWN'
+                ? 'SIMULATOR UNREACHABLE'
+                : simState
+            }
+          />
+          {simLatestGen && (
+            <span className={styles.simulatorTimestamp}>
+              Last Generated: {formatTimestamp(simLatestGen)}
             </span>
-          </div>
+          )}
+          <span className={styles.simulatorHint}>
+            (Controls wearable sensor feed; backend &amp; clinical DB remain active)
+          </span>
+        </div>
 
-          <div className={styles.simulatorActions}>
-            {simState === 'RUNNING' ? (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => void handleStopSim()}
-                disabled={simTransitioning}
-                aria-label="Pause simulated telemetry generation"
-              >
-                {simTransitioning ? 'Pausing…' : 'Pause Simulator'}
-              </Button>
-            ) : (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => void handleStartSim()}
-                disabled={simTransitioning}
-                aria-label="Resume simulated telemetry generation"
-              >
-                {simTransitioning ? 'Resuming…' : 'Resume Simulator'}
-              </Button>
-            )}
-          </div>
-
-          {simActionError && (
-            <div className={styles.controlError}>
-              Warning: {simActionError}
-            </div>
+        <div className={styles.simulatorActions}>
+          {simState === 'RUNNING' ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => void handleStopSim()}
+              disabled={simTransitioning}
+              aria-label="Stop simulated telemetry generation"
+            >
+              {simTransitioning ? 'Stopping…' : 'Stop Data Generation'}
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => void handleStartSim()}
+              disabled={simTransitioning}
+              aria-label="Start simulated telemetry generation"
+            >
+              {simTransitioning ? 'Starting…' : 'Start Data Generation'}
+            </Button>
           )}
         </div>
-      )}
+
+        {simActionError && (
+          <div className={styles.controlError}>
+            Warning: {simActionError}
+          </div>
+        )}
+      </div>
 
       {/* Demonstration Scenario Presets (Part 6O) */}
-      {!isFixtureMode && (
-        <div className={styles.scenarioPresetsBar}>
-          <div className={styles.scenarioHeaderRow}>
-            <div className={styles.scenarioTitleGroup}>
-              <span className={styles.scenarioSectionTitle}>Demo Scenarios</span>
-              <span className={styles.scenarioDisclaimerPill}>Synthetic Scenario — Not Medical Advice</span>
-            </div>
-            <div className={styles.activeScenarioBadge}>
-              Active Mode: <strong>{activeScenario.toUpperCase()}</strong>
-            </div>
+      <div className={styles.scenarioPresetsBar}>
+        <div className={styles.scenarioHeaderRow}>
+          <div className={styles.scenarioTitleGroup}>
+            <span className={styles.scenarioSectionTitle}>Demo Scenarios</span>
+            <span className={styles.scenarioDisclaimerPill}>Synthetic Scenario — Not Medical Advice</span>
           </div>
-
-          <div className={styles.scenarioControlsRow}>
-            <div className={styles.scenarioTargetGroup}>
-              <span className={styles.scenarioTargetLabel}>Target:</span>
-              <div className={styles.targetButtonGroup}>
-                <button
-                  type="button"
-                  className={`${styles.targetBtn} ${scenarioTarget === 'active' ? styles.targetBtnActive : ''}`}
-                  onClick={() => setScenarioTarget('active')}
-                >
-                  Selected ({selectedPatientId})
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.targetBtn} ${scenarioTarget === 'cohort' ? styles.targetBtnActive : ''}`}
-                  onClick={() => setScenarioTarget('cohort')}
-                >
-                  All Cohort (P101–P105)
-                </button>
-              </div>
-            </div>
-
-            <div className={styles.presetButtonsRow}>
-              <button
-                type="button"
-                className={`${styles.presetBtn} ${styles.btnNormal} ${activeScenario === 'normal' || activeScenario === 'resting' ? styles.btnPresetActive : ''}`}
-                onClick={() => void handleApplyScenario('normal')}
-                disabled={scenarioApplying}
-                title="Scenario A: Stable physiological baseline drift (0 threshold alerts)"
-              >
-                A: Normal Baseline
-              </button>
-              <button
-                type="button"
-                className={`${styles.presetBtn} ${styles.btnElevatedHr} ${activeScenario === 'elevated_hr' ? styles.btnPresetActive : ''}`}
-                onClick={() => void handleApplyScenario('elevated_hr')}
-                disabled={scenarioApplying}
-                title="Scenario B: Controlled tachycardia (HR > 130 bpm -> CRITICAL alert)"
-              >
-                B: Elevated HR (&gt;130 bpm)
-              </button>
-              <button
-                type="button"
-                className={`${styles.presetBtn} ${styles.btnLowSpo2} ${activeScenario === 'low_spo2' ? styles.btnPresetActive : ''}`}
-                onClick={() => void handleApplyScenario('low_spo2')}
-                disabled={scenarioApplying}
-                title="Scenario C: Controlled hypoxemia (SpO2 < 85% -> CRITICAL alert)"
-              >
-                C: Low SpO₂ (&lt;85%)
-              </button>
-              <button
-                type="button"
-                className={`${styles.presetBtn} ${styles.btnRecovery} ${activeScenario === 'recovering' ? styles.btnPresetActive : ''}`}
-                onClick={() => void handleApplyScenario('recovering')}
-                disabled={scenarioApplying}
-                title="Scenario D: Exponential decay back toward resting baseline (preserves existing alerts)"
-              >
-                D: Baseline Recovery
-              </button>
-            </div>
+          <div className={styles.activeScenarioBadge}>
+            Active Mode: <strong>{activeScenario.toUpperCase()}</strong>
           </div>
-
-          {scenarioFeedback && (
-            <div className={styles.scenarioFeedbackMessage}>
-              ✓ {scenarioFeedback}
-            </div>
-          )}
         </div>
-      )}
+
+        <div className={styles.scenarioControlsRow}>
+          <div className={styles.scenarioTargetGroup}>
+            <span className={styles.scenarioTargetLabel}>Target:</span>
+            <div className={styles.targetButtonGroup}>
+              <button
+                type="button"
+                className={`${styles.targetBtn} ${scenarioTarget === 'active' ? styles.targetBtnActive : ''}`}
+                onClick={() => setScenarioTarget('active')}
+              >
+                Selected ({selectedPatientId})
+              </button>
+              <button
+                type="button"
+                className={`${styles.targetBtn} ${scenarioTarget === 'cohort' ? styles.targetBtnActive : ''}`}
+                onClick={() => setScenarioTarget('cohort')}
+              >
+                All Cohort (P101–P105)
+              </button>
+            </div>
+          </div>
+
+          <div className={styles.presetButtonsRow}>
+            <button
+              type="button"
+              className={`${styles.presetBtn} ${styles.btnNormal} ${activeScenario === 'normal' || activeScenario === 'resting' ? styles.btnPresetActive : ''}`}
+              onClick={() => void handleApplyScenario('normal')}
+              disabled={scenarioApplying}
+              title="Scenario A: Stable physiological baseline drift (0 threshold alerts)"
+            >
+              A: Normal Baseline
+            </button>
+            <button
+              type="button"
+              className={`${styles.presetBtn} ${styles.btnElevatedHr} ${activeScenario === 'elevated_hr' ? styles.btnPresetActive : ''}`}
+              onClick={() => void handleApplyScenario('elevated_hr')}
+              disabled={scenarioApplying}
+              title="Scenario B: Controlled tachycardia (HR > 130 bpm -> CRITICAL alert)"
+            >
+              B: Elevated HR (&gt;130 bpm)
+            </button>
+            <button
+              type="button"
+              className={`${styles.presetBtn} ${styles.btnLowSpo2} ${activeScenario === 'low_spo2' ? styles.btnPresetActive : ''}`}
+              onClick={() => void handleApplyScenario('low_spo2')}
+              disabled={scenarioApplying}
+              title="Scenario C: Controlled hypoxemia (SpO2 < 85% -> CRITICAL alert)"
+            >
+              C: Low SpO₂ (&lt;85%)
+            </button>
+            <button
+              type="button"
+              className={`${styles.presetBtn} ${styles.btnRecovery} ${activeScenario === 'recovering' ? styles.btnPresetActive : ''}`}
+              onClick={() => void handleApplyScenario('recovering')}
+              disabled={scenarioApplying}
+              title="Scenario D: Exponential decay back toward resting baseline (preserves existing alerts)"
+            >
+              D: Baseline Recovery
+            </button>
+          </div>
+        </div>
+
+        {scenarioFeedback && (
+          <div className={styles.scenarioFeedbackMessage}>
+            ✓ {scenarioFeedback}
+          </div>
+        )}
+      </div>
 
       {/* 2. Patient Selector Bar */}
       <div className={styles.patientSelectBar}>

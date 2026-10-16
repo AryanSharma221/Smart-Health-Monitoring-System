@@ -156,6 +156,79 @@
   flex-shrink: 0;
 }
 
+/* Simulator / Data Generation Control Button */
+.simButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px var(--space-2);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.simButton:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.simButtonStopped {
+  background-color: var(--color-bg-surface-subtle);
+  border: 1px solid var(--color-border-base);
+  color: var(--color-text-secondary);
+}
+
+.simButtonStopped:hover:not(:disabled) {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-strong);
+}
+
+.simButtonRunning {
+  background-color: #ecfdf5;
+  border: 1px solid #10b981;
+  color: #065f46;
+}
+
+.simButtonRunning:hover:not(:disabled) {
+  background-color: #d1fae5;
+  border-color: #059669;
+}
+
+.simStoppedDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #94a3b8;
+  border: 1px solid #64748b;
+  flex-shrink: 0;
+}
+
+.simPulseDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #10b981;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: simPulse 1.6s infinite cubic-bezier(0.66, 0, 0, 1);
+}
+
+@keyframes simPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
 /* Notification Control */
 .notificationButton {
   display: inline-flex;
