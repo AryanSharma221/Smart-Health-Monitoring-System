@@ -344,6 +344,8 @@ class SimulatorIngestionService:
             vitals_repo.add_readings(readings)
 
             # 5. Outbox Staging & Immediate MongoDB Atlas Mirroring (Gated by mongodb_sync_enabled)
+            outbox_service = None
+            sync_enabled = False
             try:
                 from services.api.config import get_settings
                 settings = get_settings()
@@ -358,14 +360,17 @@ class SimulatorIngestionService:
             try:
                 from services.alerts.evaluator import AlertEvaluator
                 alert_evaluator = AlertEvaluator(db)
-                alert_evaluator.evaluate_readings_batch(event=event, readings=readings)
+                rule_alerts = alert_evaluator.evaluate_readings_batch(event=event, readings=readings)
+                if sync_enabled and outbox_service is not None and rule_alerts:
+                    for ra in rule_alerts:
+                        outbox_service.sync_alert_immediate(ra)
             except Exception as alert_exc:
                 logger.warning("Clinical alert evaluation failed for event %s (non-fatal): %s", event_id, alert_exc)
 
             # 6. ML Anomaly Detection & Clinical Alert Evaluation
             if ml_service is not None:
                 try:
-                    ml_service.assess_and_persist(
+                    assessment_out = ml_service.assess_and_persist(
                         db=db,
                         patient_id=patient_id,
                         timestamp=cleaned["measured_at"],
@@ -376,6 +381,8 @@ class SimulatorIngestionService:
                         is_simulated=True,
                         trigger_alert=True,
                     )
+                    if sync_enabled and outbox_service is not None and assessment_out and len(assessment_out) > 1 and assessment_out[1]:
+                        outbox_service.sync_alert_immediate(assessment_out[1])
                 except Exception as ml_exc:
                     logger.warning("ML assessment failed for event %s (non-fatal): %s", event_id, ml_exc)
 
