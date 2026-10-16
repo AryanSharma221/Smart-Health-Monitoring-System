@@ -78,14 +78,14 @@ def main():
     processes.append(p_sim)
     wait_healthy("http://127.0.0.1:8001/health", "Simulator")
 
-    # Enforce default stopped state
+    # Start simulator data generation so it actively feeds MongoDB Atlas on launch
     try:
-        req = urllib.request.Request("http://127.0.0.1:8001/api/v1/simulator/stop", data=b"{}", headers={"Content-Type": "application/json"}, method="POST")
+        req = urllib.request.Request("http://127.0.0.1:8001/api/v1/simulator/start", data=b"{}", headers={"Content-Type": "application/json"}, method="POST")
         with urllib.request.urlopen(req, timeout=3.0):
             pass
-        print("    [OK] Verified Simulator in clean STOPPED state.")
+        print("    [OK] Smartwatch Simulator started and actively streaming to MongoDB Atlas.")
     except Exception as exc:
-        print(f"    [WARN] Could not verify simulator stopped state: {exc}")
+        print(f"    [WARN] Could not start simulator: {exc}")
 
     # 2. FastAPI Backend Gateway (:8000)
     print("\n[*] Launching FastAPI Backend Gateway (:8000)...")
